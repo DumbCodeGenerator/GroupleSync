@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingLeft="16dp"
+    android:paddingTop="7dp"
+    android:paddingRight="16dp"
+    android:paddingBottom="7dp">
+
+    <TextView
+        android:id="@+id/notif_title"
+        style="@style/TextAppearance.Compat.Notification.Title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_toStartOf="@+id/notif_cancel"
+        android:layout_toLeftOf="@+id/notif_cancel"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="text" />
+
+    <TextView
+        android:id="@+id/notif_content"
+        style="@style/TextAppearance.Compat.Notification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/notif_title"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:text="TextView"
+        android:visibility="gone" />
+
+    <android.widget.ProgressBar
+        android:id="@+id/notif_progress"
+        style="@style/ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/notif_title"
+        android:layout_marginTop="5dp"
+        android:progress="20" />
+</RelativeLayout>

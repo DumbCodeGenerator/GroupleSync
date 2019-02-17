@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="ru.krogon500.grouplesync">
+
+    <!-- To auto-complete the email text field in the login form with the user's emails -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="GroupleSync"
+        android:resizeableActivity="true"
+        android:configChanges="keyboardHidden|orientation|screenSize"
+        android:supportsRtl="false"
+        android:theme="@style/AppTheme"
+        tools:replace="android:label,android:allowBackup,android:icon"
+        tools:targetApi="n"
+        android:fullBackupContent="true">
+        <activity
+            android:name=".activity.MainActivity"
+            android:label="GroupleSync"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+        <activity
+            android:name=".activity.HentaiBrowser"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:label="Hentaichan браузер">
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/searchable" />
+        </activity>
+        <!--<activity android:name=".activity.MainActivity" android:label="Закладки" android:launchMode="singleTop">-->
+        <activity
+            android:name=".activity.MangaChapters"
+            android:label="Главы"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
+        <activity
+            android:name=".activity.HentaiChapters"
+            android:label="Главы"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
+        <activity
+            android:name=".activity.UpdateNotif"
+            android:label="Новые главы"
+            android:launchMode="singleTask"
+            android:configChanges="keyboardHidden|orientation|screenSize"/>
+        <activity
+            android:name=".activity.ImageActivity"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboardHidden|screenSize|orientation"
+            android:theme="@style/AppTheme.Fullscreen.NoTitleBar" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="http"
+                    android:host="henchan.me"
+                    android:pathPrefix="/online" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="http"
+                    android:host="mintmanga.com"
+                    android:pathPattern="/..*/vol.*/..*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="http"
+                    android:host="readmanga.me"
+                    android:pathPattern="/..*/vol.*/..*" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".activity.SearchActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/searchable" />
+        </activity>
+
+        <service
+            android:name=".service.DownloadService"
+            android:label="DownloadService"
+            android:process=":download"
+            android:stopWithTask="false" />
+        <service android:name=".service.SyncService" android:stopWithTask="true" />
+        <service android:name=".service.UpdateService" android:stopWithTask="true" />
+
+        <meta-data
+            android:name="android.max_aspect"
+            android:value="2.1" />
+    </application>
+
+</manifest>

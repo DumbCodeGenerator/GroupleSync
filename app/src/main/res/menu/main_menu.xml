@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:myApp="http://schemas.android.com/apk/res-auto">
+    <!--<item
+        android:id="@+id/new_act"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="Поиск"
+        myApp:showAsAction="always|collapseActionView" />
+        -->
+    <item
+        android:id="@+id/hBrowser"
+        android:icon = "@android:drawable/ic_menu_view"
+        android:title="Hentaichan браузер"
+        myApp:showAsAction="always|collapseActionView"
+        />
+    <item
+        android:id="@+id/a_z"
+        android:icon = "@android:drawable/ic_menu_sort_alphabetically"
+        android:title="Сортировать в обратном порядке"
+        myApp:showAsAction="always|collapseActionView"
+        android:visible="false"
+        />
+    <item
+        android:id="@+id/sync"
+        android:icon="@android:drawable/stat_notify_sync_noanim"
+        android:title="Синхронизация"
+        myApp:showAsAction="never" />
+    <item
+        android:id="@+id/update"
+        android:icon="@android:drawable/stat_notify_sync_noanim"
+        android:visible="false"
+        android:title="Проверка новых глав"
+        myApp:showAsAction="always|collapseActionView" />
+    <item
+        android:id="@+id/logout"
+        android:title="Выйти"
+        myApp:showAsAction="never" />
+    <item
+        android:id="@+id/clear_table"
+        android:title="Очистить таблицу"
+        android:visible="false"
+        myApp:showAsAction="never" />
+
+</menu>

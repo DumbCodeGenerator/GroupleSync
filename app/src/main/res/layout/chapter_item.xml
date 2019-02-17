@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingBottom="5dp"
+    android:descendantFocusability="blocksDescendants">
+
+    <TextView
+        android:id="@+id/chapterTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="60dp"
+        android:layout_marginRight="60dp"
+        android:layout_toEndOf="@+id/selected"
+        android:layout_toRightOf="@+id/selected"
+        android:ellipsize="end"
+        android:maxLines="4"
+        android:padding="5sp"
+        android:textColor="@android:color/background_light"
+        android:textSize="18sp" />
+
+    <TextView
+        android:id="@+id/page"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/chapterTitle"
+        android:layout_alignLeft="@+id/chapterTitle"
+        android:layout_below="@+id/chapterTitle"
+        android:layout_marginLeft="5dp"
+        android:layout_marginBottom="5dp"
+        android:maxLines="1"
+        android:padding="5sp"
+        android:text="Страница: –"
+        android:textColor="@android:color/background_light"
+        android:textSize="12sp" />
+
+    <CheckBox
+        android:id="@+id/selected"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="15dp"
+        android:checked="false"
+        android:gravity="center_vertical" />
+
+    <FrameLayout
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginEnd="10dp"
+        android:layout_marginRight="10dp">
+
+        <com.github.lzyzsd.circleprogress.DonutProgress
+            android:id="@+id/chapterLoading"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            app:donut_finished_color="@color/colorAccent"
+            app:donut_text="..."
+            app:donut_text_color="#FFF"
+            app:donut_unfinished_color="@android:color/transparent" />
+
+        <ImageView
+            android:id="@+id/saved"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="15dp"
+            android:visibility="gone"
+            app:srcCompat="@android:drawable/ic_menu_save" />
+
+        <ImageButton
+            android:id="@+id/download"
+            style="@style/Widget.AppCompat.ImageButton"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:foregroundGravity="center_vertical"
+            android:visibility="visible"
+            app:srcCompat="@android:drawable/stat_sys_download_done" />
+    </FrameLayout>
+
+
+</RelativeLayout>

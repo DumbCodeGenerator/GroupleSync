@@ -1,0 +1,88 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply plugin: "kotlin-noarg"
+apply plugin: 'io.objectbox'
+
+android {
+    configurations.all {
+        resolutionStrategy {
+            force "com.android.support:support-v4:28.0.0"
+        }
+    }
+    signingConfigs {
+        signed_release {
+            keyAlias 'bl00dyspinner'
+            keyPassword '159753Qw'
+            storeFile file('C:/Users/krogon500/Bl00dySpinner.jks')
+            storePassword '159753Qw'
+        }
+    }
+    noArg{
+        annotation("io.objectbox.annotation.Entity")
+    }
+    compileSdkVersion 28
+    //buildToolsVersion "28.0.3"
+    //useLibrary 'org.apache.http.legacy'
+    defaultConfig {
+        applicationId "ru.krogon500.grouplesync"
+        minSdkVersion 15
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+        //testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.signed_release
+            debuggable false
+            jniDebuggable false
+            renderscriptDebuggable false
+        }
+        debug {
+            signingConfig signingConfigs.signed_release
+            debuggable true
+            jniDebuggable true
+            renderscriptDebuggable true
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    //implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.1.0-alpha02'
+    implementation 'com.google.android.material:material:1.1.0-alpha03'
+
+    implementation 'org.jsoup:jsoup:1.11.3'
+    implementation 'com.nostra13.universalimageloader:universal-image-loader:1.9.5'
+    implementation 'org.greenrobot:eventbus:3.1.1'
+    implementation 'com.github.lzyzsd:circleprogress:1.2.1'
+
+    implementation "io.objectbox:objectbox-kotlin:$objectboxVersion"
+    //implementation 'com.nolanlawson:supersaiyan-scrollview:1.2.0@aar'
+
+    //implementation 'com.jakewharton:butterknife:9.0.0-rc2'
+    //annotationProcessor 'com.jakewharton:butterknife-compiler:9.0.0-rc2'
+    //implementation 'com.jakewharton:butterknife:10.0.0'
+    //kapt 'com.jakewharton:butterknife-compiler:10.0.0'
+
+    implementation 'com.github.piasy:BigImageViewer:1.5.6'
+
+    // load with glide
+    implementation 'com.github.piasy:GlideImageLoader:1.5.6'
+
+    // support thumbnail and gif with Glide
+    implementation 'com.github.piasy:GlideImageViewFactory:1.5.6'
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}
+repositories {
+    mavenCentral()
+}

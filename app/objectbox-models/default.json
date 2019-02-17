@@ -1,0 +1,178 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:2615379334712289728",
+      "lastPropertyId": "7:5255411567844732356",
+      "name": "GroupleBookmark",
+      "properties": [
+        {
+          "id": "1:438683429930464423",
+          "name": "id"
+        },
+        {
+          "id": "2:3440228538369501746",
+          "name": "title"
+        },
+        {
+          "id": "3:8502163762331346705",
+          "name": "link"
+        },
+        {
+          "id": "4:2763342633929955874",
+          "name": "coverLink"
+        },
+        {
+          "id": "5:8120147821446850202",
+          "name": "readedLink"
+        },
+        {
+          "id": "6:5553174961075705073",
+          "name": "page"
+        },
+        {
+          "id": "7:5255411567844732356",
+          "name": "isNew"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:1676386843907145064",
+      "lastPropertyId": "12:356823184856961531",
+      "name": "GroupleChapter",
+      "properties": [
+        {
+          "id": "1:1458698696141924651",
+          "name": "id"
+        },
+        {
+          "id": "2:431435054227179598",
+          "name": "title"
+        },
+        {
+          "id": "3:6536336285551042946",
+          "name": "link"
+        },
+        {
+          "id": "4:1790496916646848074",
+          "name": "vol"
+        },
+        {
+          "id": "5:8536574176219347544",
+          "name": "chap"
+        },
+        {
+          "id": "6:1682359622718158115",
+          "name": "page"
+        },
+        {
+          "id": "7:4651443915343867598",
+          "name": "page_all"
+        },
+        {
+          "id": "8:2255996571282283239",
+          "name": "saved"
+        },
+        {
+          "id": "9:8729703737166575344",
+          "name": "downloading"
+        },
+        {
+          "id": "10:506863982437247824",
+          "name": "readed"
+        },
+        {
+          "id": "11:8090507661780776555",
+          "indexId": "1:8745906075590187148",
+          "name": "bookmarkId"
+        },
+        {
+          "id": "12:356823184856961531",
+          "name": "date"
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:4397267029518351786",
+      "lastPropertyId": "14:2443885158759211977",
+      "name": "HentaiManga",
+      "properties": [
+        {
+          "id": "1:921960566195950185",
+          "name": "id"
+        },
+        {
+          "id": "2:780174711459367722",
+          "name": "title"
+        },
+        {
+          "id": "3:8469518811122929938",
+          "name": "link"
+        },
+        {
+          "id": "4:8873960263863593530",
+          "name": "coverLink"
+        },
+        {
+          "id": "5:5893612349734801465",
+          "name": "page"
+        },
+        {
+          "id": "6:5042689189626820706",
+          "name": "page_all"
+        },
+        {
+          "id": "7:4400273264386925194",
+          "name": "inFavs"
+        },
+        {
+          "id": "8:5214063228665932474",
+          "name": "hasChapters"
+        },
+        {
+          "id": "9:8990068953205537772",
+          "name": "saved"
+        },
+        {
+          "id": "10:3359688301847058921",
+          "name": "downloading"
+        },
+        {
+          "id": "11:4354144547101650141",
+          "name": "readed"
+        },
+        {
+          "id": "12:6775631453981231416",
+          "indexId": "2:3954197538263134718",
+          "name": "originId"
+        },
+        {
+          "id": "13:2703859450223836879",
+          "name": "date"
+        },
+        {
+          "id": "14:2443885158759211977",
+          "name": "series"
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "3:4397267029518351786",
+  "lastIndexId": "2:3954197538263134718",
+  "lastRelationId": "1:5581014570555592375",
+  "lastSequenceId": "0:0",
+  "modelVersion": 4,
+  "modelVersionParserMinimum": 4,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [
+    5581014570555592375
+  ],
+  "version": 1
+}
