@@ -92,21 +92,18 @@ class DownloadService : Service() {
             expandRemoteView.setOnClickPendingIntent(R.id.notif_cancel, deletePendingIntent)
 
             mBuilder.setContentTitle(DownloadService.titles[0])
-                    //.setStyle(NotificationCompat.DecoratedCustomViewStyle())
-                    //.setProgress(0, 0, true)
                     .setContentText(null)
                     .setCustomBigContentView(expandRemoteView)
                     .setCustomContentView(remoteView)
-                    //.addAction(android.R.drawable.ic_delete, "Отмена", deletePendingIntent)
-                    //.setVibrate(null)
                     .setSmallIcon(android.R.drawable.stat_sys_download)
+
             startForeground(id, mBuilder.build())
             nm.notify(id, mBuilder.build())
             runningTask = DownloadService.queue[0]
             runningTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, "")
         } else if (DownloadService.queue.size == 0 || cancelled) {
             val message: String = if (success && !cancelled) "Скачивание завершено" else if(cancelled) "Скачивание отменено" else "Скачивание не удалось"
-            //nm.cancel(id)
+
             mBuilder.bigContentView.setTextViewText(R.id.notif_content, message)
             mBuilder.bigContentView.setViewVisibility(R.id.notif_cancel, View.GONE)
             mBuilder.bigContentView.setViewVisibility(R.id.notif_progress, View.GONE)
@@ -188,7 +185,6 @@ class DownloadService : Service() {
         }
 
         override fun doInBackground(vararg params: String): Boolean? {
-            //String img;
             return if (type == Utils.GROUPLE) {
                 groupleManga = gChaptersBox[manga_id]
                 groupleType(link)
@@ -227,6 +223,7 @@ class DownloadService : Service() {
                 }
             } catch (e: Exception) {
                 Log.e("lol", e.localizedMessage)
+                e.printStackTrace(Utils.getPrintWriter())
                 return false
             }
 
@@ -237,19 +234,15 @@ class DownloadService : Service() {
             if (!Utils.login(Utils.HENTAI, user, pass))
                 return false
             try {
-                //Log.d("lol", "workate 667");
                 val mainPage = Utils.getPage(Utils.HENTAI, user, pass, link)
-                //Log.d("lol", "link: " + link);
                 val script = mainPage.selectFirst("script:containsData(fullimg)")
                 var counter = 1
                 val pattern = Pattern.compile("\"fullimg\":.+")
                 val matcher = pattern.matcher(script.html())
                 if (matcher.find()) {
                     val needed = matcher.group(0).replace("\"fullimg\":", "")
-                    //Log.d("lol", "needed: " + needed);
                     val pattern2 = Pattern.compile("([\"])(\\\\?.)*?\\1")
                     val matcher2 = pattern2.matcher(needed)
-                    //Log.d("lol", "matcher test: " + matcher2.);
                     var max = 0
                     while (matcher2.find())
                         max++
@@ -278,7 +271,6 @@ class DownloadService : Service() {
         @Throws(Exception::class)
         private fun writeToFile(link: String) {
             val split = link.split("/")
-            //val fileSize = image.size.toLong()
             val localImg = File(path + File.separator + split[split.size - 1])
             files.add(localImg.absolutePath)
             if (localImg.exists())
@@ -290,19 +282,17 @@ class DownloadService : Service() {
 
         @SuppressLint("RestrictedApi")
         override fun onProgressUpdate(vararg values: Int?) {
-            //mBuilder.setProgress(values[1]!!, values[0]!!, false)
             val remoteView = mBuilder.bigContentView
             remoteView.setProgressBar(R.id.notif_progress, values[1]!!, values[0]!!, false)
             mBuilder.contentView.setProgressBar(R.id.notif_progress, values[1]!!, values[0]!!, false)
             remoteView.setTextViewText(R.id.notif_content, "$msg ${values[0]}/${values[1]}")
-            //mBuilder.setStyle(NotificationCompat.BigTextStyle().bigText(msg + " " + values[0] + "/" + values[1]))
 
             MPEventBus.getDefault().postToAll(UpdateEvent(values[0]!!, values[1]!!, position, false, false, link, original_id, type))
             nm.notify(id, mBuilder.build())
         }
 
-        override fun onPostExecute(success: Boolean?) {
-            if (success!!) {
+        override fun onPostExecute(success: Boolean) {
+            if (success) {
                 if (type == Utils.GROUPLE) {
                     groupleManga?.saved = true
                     groupleManga?.page_all = page_all
