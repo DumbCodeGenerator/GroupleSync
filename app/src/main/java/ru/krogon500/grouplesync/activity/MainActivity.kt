@@ -30,13 +30,6 @@ import ru.krogon500.grouplesync.service.UpdateService
 
 class MainActivity : AppCompatActivity() {
     private var mOptionsMenu: Menu? = null
-    /*@BindView(R.id.view_pager)
-    @JvmField
-    var mViewPager: ViewPager? = null
-    @BindView(R.id.tabs)
-    @JvmField
-    var tabs: TabLayout? = null*/
-    //DbHelper groupleBookmarks, groupleChapters, hentaiFavorites;
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,7 +76,6 @@ class MainActivity : AppCompatActivity() {
                 if(item !is LoginFragment){
                     val grid = item.mangaCells ?: return
                     val first = (grid.layoutManager as? GridLayoutManager ?: return).findFirstCompletelyVisibleItemPosition()
-                    //Log.d("lol", "first in recycler: $first")
                     if(first == 0){
                         frag_fab.hideView(listener)
                         appBar.setExpanded(true)

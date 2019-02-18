@@ -15,7 +15,6 @@ class App : Application() {
         Thread.setDefaultUncaughtExceptionHandler(CustomizedExceptionHandler(Utils.cachePath))
         try {
             boxStore = MyObjectBox.builder().androidContext(applicationContext).directory(Utils.dbDir).build()
-            //Utils.readCookies(applicationContext.cacheDir.absolutePath)
         } catch (e: DbException){
             boxStore = MyObjectBox.builder().androidContext(applicationContext).build()
         } catch (e: Exception) {

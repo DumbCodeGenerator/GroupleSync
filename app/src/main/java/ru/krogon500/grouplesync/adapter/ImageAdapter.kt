@@ -126,7 +126,6 @@ class ImageAdapter : PagerAdapter {
             chapter.page_all = offset
             gChaptersBox.put(chapter)
         }
-        //ImageAdapter.filePaths.reverse()
     }
 
 
@@ -142,15 +141,11 @@ class ImageAdapter : PagerAdapter {
     fun nextChapter(path: String) {
         val nextChapterImg = Utils.getSavedListFile(path) ?: return
         if (count > ImageAdapter.offset) {
-            //Log.d("lol", count + " / " + offset);
             count = ImageAdapter.offset
-            //Log.d("lol", count + " / " + offset);
-            //int counter = 0;
-            //counter++;
+
             if (filePaths.size > ImageAdapter.offset) {
                 filePaths.subList(ImageAdapter.offset, filePaths.size).clear()
             }
-            //Log.d("lol", counter + " / " + filePaths.size());
         }
         ImageAdapter.offset = nextChapterImg.size
         count += ImageAdapter.offset
@@ -182,12 +177,10 @@ class ImageAdapter : PagerAdapter {
 
                     val mainPage = Jsoup.connect(ImageAdapter.nextChapter).data("mtr", "1").get()
                     val script = mainPage.selectFirst("script:containsData(rm_h.init)")
-                    //int counter = 1;
                     val content = script.html()
                     val pattern = Pattern.compile("var nextChapterLink = \"(.*)\";")
                     val matcher = pattern.matcher(content)
                     if (matcher.find()) {
-                        //Log.d("lol", "group 0 = " + matcher.group(0));
                         ImageAdapter.nextChapter = String.format("%s://%s%s", protocol, host, matcher.group(1)).replace("?mtr=1", "")
                         if (ImageAdapter.nextChapter!!.contains("/list/like"))
                             ImageAdapter.nextChapter = null
@@ -196,7 +189,6 @@ class ImageAdapter : PagerAdapter {
                     var needed = rows[rows.size - 1]
                     needed = needed.substring(needed.indexOf('[') + 1, needed.lastIndexOf(']'))
                     val parts = needed.split("],".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    //int max = parts.length;
                     for (part in parts) {
                         val link = part.replace("[\\['\"\\]]".toRegex(), "").split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                         val ext = link[2].split("\\?".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
@@ -211,8 +203,6 @@ class ImageAdapter : PagerAdapter {
 
                     currentChapter = chapters!!.indexOf(nextChapter!!)
 
-                    //Log.d("lol", "link: " + nextChapter!!)
-                    //Log.d("lol", "doc: " + mainPage.html());
                     nextChapter = if (chapters!!.size > currentChapter + 1)
                         chapters!![currentChapter + 1]
                     else
@@ -223,7 +213,6 @@ class ImageAdapter : PagerAdapter {
                     val matcher = pattern.matcher(script.html())
                     if (matcher.find()) {
                         val needed = matcher.group(0).replace("\"fullimg\":", "")
-                        //Log.d("lol", "needed: " + needed);
                         val pattern2 = Pattern.compile("([\"|'])(\\\\?.)*?\\1")
                         val matcher2 = pattern2.matcher(needed)
                         while (matcher2.find()) {
@@ -300,7 +289,6 @@ class ImageAdapter : PagerAdapter {
                 }
             }).duration = 100
             uiHelper.show()
-            //rl.animate().translationYBy(rl.getHeight()).setDuration(50);
             opened = true
         } else {
             rl.animate().alpha(0.0f).setListener(object : AnimatorListenerAdapter() {
@@ -309,7 +297,6 @@ class ImageAdapter : PagerAdapter {
                 }
             }).duration = 100
             uiHelper.hide()
-            //rl.animate().translationYBy(-rl.getHeight()).setStartDelay(150).setDuration(50);
             opened = false
         }
     }
@@ -322,8 +309,6 @@ class ImageAdapter : PagerAdapter {
         bigImage.setOnClickListener { imageClick(mContext) }
         bigImage.setImageViewFactory(GlideImageViewFactory())
         bigImage.setProgressIndicator(CustomProgressIndicator())
-        //Log.d("lol", "123");
-        //bigImageView.setInitScaleType(BigImageView.INIT_SCALE_TYPE_CENTER_CROP);
 
         val myImageLoaderCallback = object : ImageLoader.Callback {
             var iView = bigImage
@@ -357,12 +342,8 @@ class ImageAdapter : PagerAdapter {
                 val imageView = iView.ssiv
 
                 if (imageView != null) {
-
-                    //Log.d("lol", "est SSIV")
                     imageView.setMinimumTileDpi(160)
-                    //imageView.setDoubleTapZoomDpi(160);
-                    //imageView.setMaxScale(3);
-                    //imageView.setDoubleTapZoomDuration(300);
+
                     if (mContext.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
                         imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
                     else
@@ -377,7 +358,6 @@ class ImageAdapter : PagerAdapter {
                         override fun onImageLoaded() {
                             imageView.setDoubleTapZoomDpi(80)
                             imageView.setDoubleTapZoomDuration(200)
-                            //imageView.setDoubleTapZoomStyle(SubsamplingScaleImageView.ZOOM_FOCUS_FIXED);
                             imageView.isQuickScaleEnabled = false
                             val display = (mContext as Activity).windowManager.defaultDisplay
                             val size = Point()
@@ -385,13 +365,11 @@ class ImageAdapter : PagerAdapter {
                             val width = size.x
 
                             if (imageViewPos.get(pos, null) != null) {
-                                //Log.d("lol", "scale and center")
                                 val state = imageViewPos.get(pos)
                                 imageView.setScaleAndCenter(state.scale, state.center)
                             }else if(imageView.sWidth < width){
                                 imageView.setScaleAndCenter(1f, PointF(imageView.sWidth/2f, 0f))
                             }
-                            //Log.d("lol", imageView.sWidth.toString() + "/" + width.toString())
                         }
 
                         override fun onPreviewLoadError(e: Exception) {
@@ -410,9 +388,7 @@ class ImageAdapter : PagerAdapter {
 
                         }
                     })
-                    //setScaleWidthTop(imageView);
                 }
-                //iView.setVisibility(View.VISIBLE);
             }
 
             override fun onFail(error: Exception) {
@@ -432,11 +408,9 @@ class ImageAdapter : PagerAdapter {
     }
 
     companion object {
-        
         var offset: Int = 0
         var currentChapter: Int = 0
         var opened: Boolean = false
-        //private int count;
         private var type: Byte = 0
         var nextChapter: String? = null
     }

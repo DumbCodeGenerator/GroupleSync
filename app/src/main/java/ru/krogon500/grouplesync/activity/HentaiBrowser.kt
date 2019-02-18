@@ -38,7 +38,6 @@ import kotlin.collections.LinkedHashMap
 
 class HentaiBrowser : AppCompatActivity() {
     private var seriesLinks = LinkedHashMap<String, String>()
-    //private var seriesTitles = ArrayList<String>()
     private var filteredSeriesTitles = ArrayList<String>()
     private var visPos: Int = 0
     private var curPage: Int = 0
@@ -54,6 +53,21 @@ class HentaiBrowser : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.hbrowser_act)
         isLoading = true
+
+        if (!imageLoader!!.isInited) {
+
+            val options = DisplayImageOptions.Builder()
+                    .cacheInMemory(true)
+                    .bitmapConfig(Bitmap.Config.RGB_565)
+                    .build()
+            val config = ImageLoaderConfiguration.Builder(this@HentaiBrowser)
+                    .defaultDisplayImageOptions(options)
+                    .memoryCacheExtraOptions(500, 300)
+                    .denyCacheImageMultipleSizesInMemory()
+                    .build()
+            imageLoader!!.init(config)
+        }
+
         if (savedInstanceState != null) {
             visPos = savedInstanceState.getInt("viewPos")
             curPage = savedInstanceState.getInt("page")
@@ -123,7 +137,7 @@ class HentaiBrowser : AppCompatActivity() {
                     if (l >= totalItemCount && !isLoading) {
                         // It is time to add new data. We call the listener
                         isLoading = true
-                        //Log.d("lol", "total: " + totalItemCount);
+
                         visPos = firstVisibleItem
                         hTask = HentaiBrowse(mUser, mPass, pages[curPage], false)
                         hTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
@@ -154,11 +168,9 @@ class HentaiBrowser : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        //Log.d("lol", "sl size: ${seriesLinks.size} || is arrayadapter: ${browseList.adapter is ArrayAdapter<*>}")
         if(seriesLinks.size > 0 && browseList.adapter is ArrayAdapter<*>){
             browser_fab.hideView()
             seriesLinks.clear()
-            //seriesTitles.clear()
             if(mOptionsMenu != null){
                 val search_item = mOptionsMenu!!.findItem(R.id.action_search)
                 search_item!!.isVisible = false
@@ -230,7 +242,6 @@ class HentaiBrowser : AppCompatActivity() {
                 val adapter = browseList.adapter
                 if (seriesLinks.size > 0) {
                     if(adapter is ArrayAdapter<*>) {
-                        //adapter as ArrayAdapter<String>
                         filteredSeriesTitles.clear()
                         browseList.adapter = ArrayAdapter(this@HentaiBrowser, android.R.layout.simple_list_item_1, seriesLinks.keys.toTypedArray())
                         browseList.setDivider(this@HentaiBrowser)
@@ -407,7 +418,6 @@ class HentaiBrowser : AppCompatActivity() {
             if (!Utils.login(Utils.HENTAI, mUser, mPass))
                 return false
             seriesLinks.clear()
-            //seriesTitles.clear()
             try {
                 val seriesPage = Utils.getPage(Utils.HENTAI, mUser, mPass, "${Utils.hentaiBase}/series/")
                 val series = seriesPage.select("div.series_wrap")
@@ -416,7 +426,6 @@ class HentaiBrowser : AppCompatActivity() {
                     val seriesEl = it.selectFirst("div.series_name").selectFirst("h2").selectFirst("a")
                     val title = seriesEl.attr("title")
                     val link = Utils.hentaiBase + seriesEl.attr("href")
-                    //seriesTitles.add(title)
                     seriesLinks[title] = link
                 }
             }catch (e: java.lang.Exception){
@@ -463,27 +472,10 @@ class HentaiBrowser : AppCompatActivity() {
         private val mangaItems = ArrayList<MangaItem>()
         private val newAdapter: HBrowserAdapter = HBrowserAdapter(applicationContext)
 
-        override fun onPreExecute() {
-            if (!imageLoader!!.isInited) {
-
-                val options = DisplayImageOptions.Builder()
-                        //.cacheInMemory(true)
-                        .bitmapConfig(Bitmap.Config.RGB_565)
-                        .build()
-                val config = ImageLoaderConfiguration.Builder(this@HentaiBrowser)
-                        .defaultDisplayImageOptions(options)
-                        .memoryCacheExtraOptions(500, 300)
-                        .denyCacheImageMultipleSizesInMemory()
-                        .build()
-                imageLoader!!.init(config)
-            }
-        }
-
         override fun doInBackground(vararg voids: Void): Boolean? {
             if (!Utils.login(Utils.HENTAI, mUser, mPass))
                 return false
             try {
-                //Log.d("lol", "linka: " + link);
                 val mainPage = Utils.getPage(Utils.HENTAI, mUser, mPass, link)
                 if (firstPage) {
                     pages.clear()
@@ -494,10 +486,7 @@ class HentaiBrowser : AppCompatActivity() {
                         pages.forEach { this@HentaiBrowser.pages.add(Utils.hentaiBase + it.attr("href")) }
                 }
                 val rows = mainPage.selectFirst("div#content").select("div.content_row")
-                //int pos = offset;
-                //Log.d("lol", "rows count: " + rows.size());
                 rows.filter { it.text().contains("Хентай манга", true) }.forEach {
-                    //Log.d("lol", if(it.text().contains("Хентай манга", true)) "manga" else "ne manga")
                     val row_info = it.selectFirst("a.title_link")
                     val title = row_info.text()
 
@@ -515,12 +504,10 @@ class HentaiBrowser : AppCompatActivity() {
                     val pluses = it.selectFirst("div.row4_left").text().replace("&nbsp;", "").trim()
 
                     val mangaItem = MangaItem(id!!, title, series, baseLink, tags, pluses)
-                    //tags.add(tagsStr);
 
                     if (!tags.contains("lolcon")) {
                         val imageLink = it.selectFirst("div.manga_images").selectFirst("a").selectFirst("img").attr("src")
                         val imageLinkHQ = imageLink.getHQThumbnail()
-                        //val adapter = browseList.adapter
                         mangaItem.coverLink = imageLinkHQ
                     }
 

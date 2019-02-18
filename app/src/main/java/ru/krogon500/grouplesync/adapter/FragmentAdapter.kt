@@ -49,16 +49,11 @@ class FragmentAdapter(private val mFragmentManager: FragmentManager, //private S
                     val args = Bundle()
                     args.putString("user", user)
                     args.putString("pass", pass)
-                    //Log.d("lol", "getItem");
                     val fragment = GroupleFragment()
-                    //args.put
                     fragment.arguments = args
                     mFragmentAtPos0 = fragment
-                    //groupleLogged = true;
-                    //return mFragmentAtPos0;
                 } else {
                     mFragmentAtPos0 = LoginFragment(listener, Utils.GROUPLE)
-                    //return mFragmentAtPos0;
                 }
                 groupleLogged = mFragmentAtPos0 !is LoginFragment
                 return mFragmentAtPos0 as Fragment
@@ -75,15 +70,11 @@ class FragmentAdapter(private val mFragmentManager: FragmentManager, //private S
                     val args = Bundle()
                     args.putString("user", user)
                     args.putString("pass", pass)
-                    //Log.d("lol", "getItem");
                     val fragment = HentaiFragment()
-                    //args.put
                     fragment.arguments = args
                     mFragmentAtPos1 = fragment
-                    //return mFragmentAtPos0;
                 } else {
                     mFragmentAtPos1 = LoginFragment(listener, Utils.HENTAI)
-                    //return mFragmentAtPos0;
                 }
                 hentaiLogged = mFragmentAtPos1 !is LoginFragment
                 return mFragmentAtPos1 as Fragment
@@ -92,12 +83,9 @@ class FragmentAdapter(private val mFragmentManager: FragmentManager, //private S
                 return mFragmentAtPos1 as Fragment
             }
         }
-        //return null;
     }
 
     override fun getItemPosition(`object`: Any): Int {
-        //Log.d("lol", "get pos/ " + `object`.javaClass.name + " / " + hentaiLogged + " / " + groupleLogged)
-        //return POSITION_NONE;
         if (`object` is LoginFragment && mFragmentAtPos0 is GroupleFragment && !groupleLogged)
             return POSITION_NONE
         if (`object` is GroupleFragment && mFragmentAtPos0 is LoginFragment && groupleLogged)
@@ -113,19 +101,6 @@ class FragmentAdapter(private val mFragmentManager: FragmentManager, //private S
     override fun getCount(): Int {
         return FragmentAdapter.NUM_ITEMS
     }
-
-    /*@Override
-    public Object instantiateItem(ViewGroup container, int position) {
-        Fragment fragment = (Fragment) super.instantiateItem(container, position);
-        registeredFragments.put(position, new WeakReference<>(fragment));
-        return fragment;
-    }
-
-    @Override
-    public void destroyItem(ViewGroup container, int position, Object object) {
-        registeredFragments.remove(position);
-        super.destroyItem(container, position, object);
-    }*/
 
     inner class LoginList : LoginListener {
         override fun goToMain(type: Byte?, args: Bundle) {
@@ -145,11 +120,6 @@ class FragmentAdapter(private val mFragmentManager: FragmentManager, //private S
     }
 
     companion object {
-
         private const val NUM_ITEMS = 2
     }
-
-    /*public Fragment getRegisteredFragment(int position) {
-        return registeredFragments.get(position).get();
-    }*/
 }

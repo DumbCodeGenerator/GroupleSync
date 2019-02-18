@@ -26,7 +26,6 @@ import se.ajgarn.mpeventbus.MPEventBus
 
 
 class HentaiChaptersAdapter(private val mContext: Context, private val origin_manga: HentaiManga) : BaseAdapter() {
-    //private final ArrayList<String> chapterTitles, links, manga_ids;
     var hChapters: ToMany<HentaiManga> = origin_manga.relateds
 
     val checkedItems: LinkedHashMap<Int, Boolean> = LinkedHashMap()
@@ -143,7 +142,6 @@ class HentaiChaptersAdapter(private val mContext: Context, private val origin_ma
         else
             viewHolder.title.setTextColor(Color.WHITE)
 
-        //viewHolder.title.setTag(links.get(position));
         viewHolder.download.visibility = if (chapterItem.saved || chapterItem.downloading) View.GONE else View.VISIBLE
         viewHolder.loading.visibility = if (chapterItem.downloading) View.VISIBLE else View.GONE
         viewHolder.saved.visibility = if (chapterItem.saved) View.VISIBLE else View.GONE

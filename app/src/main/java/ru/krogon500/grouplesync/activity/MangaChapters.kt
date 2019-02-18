@@ -139,12 +139,7 @@ class MangaChapters : AppCompatActivity() {
 
         if (supportActionBar != null)
             supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        /*fab.addOnHideAnimationListener(object: AnimatorListenerAdapter() {
-            override fun onAnimationStart(animation: Animator?) {
 
-            }
-        })*/
-        //fab.hideView()
         fab.setOnClickListener {
             val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return@setOnClickListener
             chaptersList.smoothScrollBy(0,0)
@@ -188,9 +183,7 @@ class MangaChapters : AppCompatActivity() {
 
     override fun onRestart() {
         super.onRestart()
-        //Log.d("savedd", "restart $visPos")
         if (!EventBus.getDefault().isRegistered(this)) {
-            //MPEventBus.getDefault().register(this);
             EventBus.getDefault().register(this)
         }
         gChapters = GroupleFragment.groupleBookmarksBox[bookmark_id].chapters
@@ -252,11 +245,9 @@ class MangaChapters : AppCompatActivity() {
                 val v = chaptersList.getViewByPosition(it.key)
                 val c = v.findViewById<CheckBox>(R.id.selected)
                 c.isChecked = false
-                //ImageView saved = v.findViewById(R.id.saved);
                 if (!chapterItem.saved)
                     return@forEach
-                //String link = (String) c.getTag();
-                //int[] volAndChap = Utils.getVolAndChapterFromLink(link);
+
                 val path = "${Utils.grouplePath}/b$bookmark_id/vol${chapterItem.vol}/${chapterItem.chap}"
                 val mangaDir = File(path)
                 if(mangaDir.exists())
@@ -300,7 +291,6 @@ class MangaChapters : AppCompatActivity() {
             intent.putExtra("online", !chapterItem.saved)
             intent.putExtra("page", chapterItem.page)
             startActivity(intent)
-            //return;
         } else {
             selected.isChecked = !selected.isChecked
         }
@@ -370,8 +360,6 @@ class MangaChapters : AppCompatActivity() {
 
     @SuppressLint("StaticFieldLeak")
     private inner class GetMangaInfo
-    //private final ArrayList<String> chapterTitles = new ArrayList<>();
-    //private final ArrayList<String> links = new ArrayList<>();
 
     internal constructor(private val baseLink: String, private var readedLink: String,
                          private val refresh: Boolean, private var page: Int) : AsyncTask<Void, Void, Boolean>() {
@@ -408,12 +396,10 @@ class MangaChapters : AppCompatActivity() {
                 val chapters = table.children()
                 chapters.reverse()
 
-                //saved = new boolean[table.children().size()];
-                //Log.d("lol", "readed1 link: $readedLink")
                 chapters.forEach {
                     if (isCancelled)
                         return false
-                    //val values = ContentValues()
+
                     val hrefna = it.selectFirst("td[colspan] > a[title]")
                     val chapterLink = String.format("%s://%s%s", url.protocol, url.host, hrefna.attr("href"))
 
@@ -432,20 +418,13 @@ class MangaChapters : AppCompatActivity() {
                     val title = "Глава $chapterName$sup"
                     val volAndChap = chapterLink.getVolAndChapter()
 
-                    //Log.d("lol", gChapters.find { chapter -> chapter.link == chapterLink }?.page_all?.toString() ?: "null")
-
                     val chapterItem = gChapters.find { chapter -> chapter.link == chapterLink } ?:
                                                     GroupleChapter(id = 0, title = title, link = chapterLink, vol = volAndChap[0], chap = volAndChap[1], date = System.nanoTime())
 
-                    //Log.d("lol", "link and date: ${chapterItem.link} || ${chapterItem.date}")
-
                     if(refresh || gChapters.size < chapters.size) {
                         if (chapterLink.trim() != readedLink.trim() && !done && !readedLink.trim().contains("vol0/0", true)) {
-                            //Log.d("lol", "readed link not done: $chapterLink")
                             chapterItem.readed = true
                         } else if (chapterLink.trim() == readedLink.trim() && !done) {
-                            //Log.d("lol", "readed link done: $chapterLink")
-                            //chapterItem.readed = false
                             val doc = Jsoup.connect(chapterLink).data("mtr", "1").get()
                             val script = doc.selectFirst("script:containsData(rm_h.init)")
                             val content = script.html()
@@ -454,19 +433,16 @@ class MangaChapters : AppCompatActivity() {
                             needed = needed.substring(needed.indexOf('[') + 1, needed.lastIndexOf(']'))
                             val parts = needed.split("],")
 
-                            //Log.d("lol", "page count: ${doc.selectFirst("span.pages-count").text()}")
                             chapterItem.page_all = parts.size
                             chapterItem.page = page
                             chapterItem.readed = chapterItem.page + 1 == chapterItem.page_all
                             done = true
                         }
                     }
-                    //chapterItem.bookmark.target = gBookmark
                     if(gChapters.contains(chapterItem))
                         gChaptersBox.put(chapterItem)
                     else
                         gChapters.add(chapterItem)
-                    //gChaptersBox.put(chapterItem)
                 }
                 gChapters.applyChangesToDb()
                 return true
@@ -503,14 +479,6 @@ class MangaChapters : AppCompatActivity() {
                 deleteSelected.setOnClickListener { onDeleteSelectedClicked() }
                 selectUnread.setOnClickListener { onSelectUnreadClicked() }
                 makeReaded.setOnClickListener { onMakeReadedClicked() }
-                //Log.d("lol", "first: ${chaptersList.firstVisiblePosition}/readed: ${adapter.getLastReaded()}/last: ${chaptersList.lastVisiblePosition}")
-                /*chaptersList.post {
-                    if(adapter.getLastReaded() in chaptersList.firstVisiblePosition..chaptersList.lastVisiblePosition) {
-                        val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
-                        val fab_bottomMargin = layoutParams.bottomMargin
-                        fab.animate().translationY((fab.height + fab_bottomMargin).toFloat()).setInterpolator(LinearInterpolator()).start()
-                    }
-                }*/
 
                 chaptersList.setOnScrollListener(object : AbsListView.OnScrollListener {
                     var isAnimated = false
@@ -555,14 +523,11 @@ class MangaChapters : AppCompatActivity() {
                         val last = visibleItemCount + firstVisibleItem
                         val readed = scrollAdapter.getLastReaded()
 
-                        //Log.d("lol", "first: $firstVisibleItem / transY: ${fab.translationY} / isAnimated: $isAnimated")
                         if(readed in firstVisibleItem until last && fab.translationY == 0f && !isAnimated){
-                            //Log.d("lol", "pryachem: $readed/$firstVisibleItem")
                             val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
                             val fab_bottomMargin = layoutParams.bottomMargin
                             fab.animate().translationY((fab.height + fab_bottomMargin).toFloat()).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
                         }else if(readed !in firstVisibleItem until last && fab.translationY > 0 && !isAnimated){
-                            //Log.d("lol", "kazhem: $readed/$firstVisibleItem")
                             if(readed > firstVisibleItem)
                                 fab.setImageDrawable(ContextCompat.getDrawable(applicationContext, R.drawable.arrow_down))
                             else
@@ -571,7 +536,6 @@ class MangaChapters : AppCompatActivity() {
                         }
                     }
                 })
-                //adapter.notifyDataSetChanged();
                 if (!EventBus.getDefault().isRegistered(this@MangaChapters))
                     EventBus.getDefault().register(this@MangaChapters)
             }

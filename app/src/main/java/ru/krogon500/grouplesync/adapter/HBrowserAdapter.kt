@@ -60,7 +60,6 @@ class HBrowserAdapter(private val mContext: Context, private var mangaItems: Arr
         val mangaItem = mangaItems[position]
         viewHolder.title.text = mangaItem.title
         viewHolder.series.text = "Серия: ${mangaItem.series}"
-        //viewHolder.title.setTag(ids.get(position) + "///" + links.get(position));
         viewHolder.pluses.text = mangaItem.pluses
         viewHolder.tags.text = String.format("Тэги: %s", mangaItem.tags)
         if (mangaItem.cover != null)

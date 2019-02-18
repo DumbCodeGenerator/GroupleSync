@@ -90,14 +90,12 @@ class HentaiChapters : AppCompatActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        //Log.d("savedd", "save");
         super.onSaveInstanceState(outState)
         outState.putInt("listPos", chaptersList!!.firstVisiblePosition)
         outState.putBoolean("fromBrowser", fromBrowser)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        //Log.d("savedd", "restore");
         super.onRestoreInstanceState(savedInstanceState)
         fromBrowser = savedInstanceState.getBoolean("fromBrowser")
     }
@@ -118,7 +116,6 @@ class HentaiChapters : AppCompatActivity() {
         setContentView(R.layout.manga_chapters)
         fab.hide()
         selectUnread!!.visibility = View.GONE
-        //hentaiBookmarks = (application as App).hentaiBookmarks
 
         if (supportActionBar != null)
             supportActionBar!!.setDisplayHomeAsUpEnabled(true)
@@ -156,12 +153,8 @@ class HentaiChapters : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (!EventBus.getDefault().isRegistered(this)) {
-            //MPEventBus.getDefault().register(this);
             EventBus.getDefault().register(this)
         }
-        /*if (groupleChapters == null)
-            groupleChapters = new DbHelper(MangaChapters.this, DbHelper.CHAPTERS_DATABASE_NAME);*/
-        //new GetHentaiInfo(link, user, pass, false, fromBrowser).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void) null);
     }
 
     override fun onRestart() {
@@ -170,20 +163,6 @@ class HentaiChapters : AppCompatActivity() {
             return
         val adapter = chaptersList.adapter as? HentaiChaptersAdapter ?: return
         adapter.update(HentaiFragment.hentaiBox[manga_id].relateds)
-        //val cursor = hentaiBookmarks.selectRelated(manga_id)
-        /*if(cursor.moveToFirst()){
-            while (!cursor.isAfterLast){
-                val chapterItem = adapter.getItem(cursor.position) as ChapterItem
-                val readed = cursor.getInt(cursor.getColumnIndex(DbHelper.READED)) == 1
-                val page = cursor.getInt(cursor.getColumnIndex(DbHelper.PAGE))
-                val page_all = cursor.getInt(cursor.getColumnIndex(DbHelper.PAGE_ALL))
-                chapterItem.readed = readed
-                chapterItem.page = page
-                chapterItem.page_all = page_all
-                cursor.moveToNext()
-            }
-            adapter.notifyDataSetChanged()
-        }*/
     }
 
     fun onSelectAllClicked() {
@@ -256,7 +235,7 @@ class HentaiChapters : AppCompatActivity() {
 
         val chapterItem = parent.getItemAtPosition(position) as HentaiManga
         val selected = view.findViewById<CheckBox>(R.id.selected)
-        //TextView title = view.findViewById(R.id.chapterTitle);
+
         if ((!fromBrowser && (chaptersList.adapter as? HentaiChaptersAdapter ?: return).isAllUnchecked) || fromBrowser) {
             val intent = Intent(this, ImageActivity::class.java)
             Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
@@ -267,14 +246,12 @@ class HentaiChapters : AppCompatActivity() {
             intent.putExtra("link", chapterItem.link)
             intent.putExtra("chapters", links)
             intent.putExtra("page", chapterItem.page)
-            //Log.d("lol", chapterItem.saved.toString())
             intent.putExtra("online", !chapterItem.saved)
 
             if(fromBrowser)
                 intent.putExtra("fromBrowser", fromBrowser)
 
             startActivity(intent)
-            //return;
         }  else {
             selected.isChecked = !selected.isChecked
         }
@@ -283,16 +260,13 @@ class HentaiChapters : AppCompatActivity() {
 
     @SuppressLint("StaticFieldLeak")
     private inner class GetHentaiInfo
-    //private final ArrayList<String> chapterTitles = new ArrayList<>(), manga_ids = new ArrayList<>();
 
-    internal constructor(private val baseLink: String, private val mUser: String, private val mPass: String, //private boolean[] saved, readed;
+    internal constructor(private val baseLink: String, private val mUser: String, private val mPass: String,
                          private val refresh: Boolean, private val fromBrowser: Boolean) : AsyncTask<Void, Void, Boolean>() {
-        //private var cursor: Cursor? = null
         private val chapterItems = ArrayList<HentaiManga>()
         private var skip: Boolean = false
 
         override fun onPreExecute() {
-            //cursor = hentaiBookmarks.selectRelated(manga_id)
             if (hChapters?.isNotEmpty() == true && !refresh && !fromBrowser)
                 skip = true
         }
@@ -373,7 +347,7 @@ class HentaiChapters : AppCompatActivity() {
                 selectAll.setOnClickListener { onSelectAllClicked() }
                 downloadSelected.setOnClickListener { onDownloadSelectedClicked() }
                 deleteSelected.setOnClickListener { onDeleteSelectedClicked() }
-                //adapter.notifyDataSetChanged();
+
                 if (!EventBus.getDefault().isRegistered(this@HentaiChapters))
                     EventBus.getDefault().register(this@HentaiChapters)
             }

@@ -30,7 +30,6 @@ import io.objectbox.kotlin.query
 import kotlinx.android.synthetic.main.fragment.*
 import kotlinx.android.synthetic.main.main_act2.*
 import org.jsoup.Connection
-import org.jsoup.Jsoup
 import ru.krogon500.grouplesync.*
 import ru.krogon500.grouplesync.activity.MangaChapters
 import ru.krogon500.grouplesync.adapter.GroupleAdapter
@@ -40,8 +39,6 @@ import java.io.File
 import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.collections.ArrayList
-
-//private Cursor cursor;
 
 class GroupleFragment : Fragment() {
 
@@ -112,8 +109,6 @@ class GroupleFragment : Fragment() {
         when (item.itemId) {
             1 -> {
                 val adapter = mangaCells.adapter as? GroupleAdapter ?: return false
-                /*if (mangaCells != null && mangaCells!!.adapter != null)
-                    (mangaCells!!.adapter as GroupleAdapter).remove(menuInfo.position)*/
 
                 val info = adapter.getItem(menuInfo.position)
                 val id = info.id
@@ -127,10 +122,8 @@ class GroupleFragment : Fragment() {
                     else
                         Log.d("lol", "hueta kakaya-to")
                 }
-                //Log.d("lol", "id: " + id);
                 adapter.remove(menuInfo.position)
 
-                //groupleChapters.deleteTable("'$id'")
                 DeleteBookmarkTask(id.toString()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?)
                 val mangaDir = File(Utils.grouplePath + File.separator + "b" + id)
                 if (mangaDir.exists())
@@ -149,8 +142,7 @@ class GroupleFragment : Fragment() {
     }
 
     @SuppressLint("StaticFieldLeak")
-    private inner class DeleteBookmarkTask internal constructor(private val id: String)//Log.d("lol", "id: " + id);
-        : AsyncTask<Void, Void, Boolean>() {
+    private inner class DeleteBookmarkTask internal constructor(private val id: String): AsyncTask<Void, Void, Boolean>() {
 
         override fun doInBackground(vararg voids: Void): Boolean? {
             val data = HashMap<String, String>()
@@ -162,14 +154,12 @@ class GroupleFragment : Fragment() {
                 e.printStackTrace(Utils.getPrintWriter())
                 Log.e("GroupleSync", e.localizedMessage)
                 false
-                //Toast.makeText(getApplicationContext(), "Не удалось удалить с сайта", Toast.LENGTH_SHORT).show();
             }
 
         }
 
-        override fun onPostExecute(success: Boolean?) {
-            //super.onPostExecute(aBoolean);
-            if (success!!) {
+        override fun onPostExecute(success: Boolean) {
+            if (success) {
                 Toast.makeText(activity, "Закладка с сайта успешно удалена", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(activity, "Не удалось удалить закладку с сайта", Toast.LENGTH_SHORT).show()
@@ -177,7 +167,7 @@ class GroupleFragment : Fragment() {
         }
     }
 
-    private class SearchTask internal constructor(private val queryLink: String) : AsyncTask<Void, Void, Boolean>() {
+    /*private class SearchTask internal constructor(private val queryLink: String) : AsyncTask<Void, Void, Boolean>() {
 
         override fun doInBackground(vararg voids: Void): Boolean? {
             try {
@@ -190,11 +180,10 @@ class GroupleFragment : Fragment() {
             }
 
         }
-    }
+    }*/
 
-    private class GetBookmarksTask internal constructor(private val mUser: String, private val mPass: String, private val refresh: Boolean, context: GroupleFragment, val cacheDir: File = File(Utils.cachePath + File.separator + "covers")) : AsyncTask<Void, Void, Boolean>() {
-        //internal var pauseOnScroll: Boolean = false // or true
-        //internal var pauseOnFling = true // or false
+    private class GetBookmarksTask internal constructor(private val mUser: String, private val mPass: String, private val refresh: Boolean,
+                                                        context: GroupleFragment, val cacheDir: File = File(Utils.cachePath + File.separator + "covers")) : AsyncTask<Void, Void, Boolean>() {
         internal var fragmentWeakReference: WeakReference<GroupleFragment> = WeakReference(context)
         internal var fragment: GroupleFragment? = null
         internal var ids: ArrayList<Long> = ArrayList()
@@ -206,7 +195,6 @@ class GroupleFragment : Fragment() {
                 cancel(true)
                 return
             }
-
 
             if (!cacheDir.exists())
                 cacheDir.mkdirs()
@@ -225,9 +213,6 @@ class GroupleFragment : Fragment() {
                 imageLoader.init(config)
             }
 
-            //val listener = PauseOnScrollListener(imageLoader, pauseOnScroll, pauseOnFling)
-            //fragment!!.mangaCells!!.setOnScrollListener(listener)
-
             if (!groupleBookmarksBox.isEmpty && !refresh)
                 skip = true
         }
@@ -235,9 +220,6 @@ class GroupleFragment : Fragment() {
         override fun doInBackground(vararg voids: Void): Boolean? {
             if (skip)
                return true
-
-            /*if (refresh && fragment!!.context.isConnected())
-                groupleBookmarksBox.removeAll()*/
 
             try {
                 if (!Utils.login(Utils.GROUPLE, mUser, mPass))
@@ -287,7 +269,6 @@ class GroupleFragment : Fragment() {
 
             } catch (e: Exception) {
                 e.printStackTrace(Utils.getPrintWriter())
-                //cursor.close()
                 return false
             }
 
@@ -321,7 +302,6 @@ class GroupleFragment : Fragment() {
                         intent.putExtra("page", mangaItem.page)
                         intent.putExtra("mangaTitle", mangaItem.title)
                         intent.putExtra("baseLink", mangaItem.link)
-                        //Log.d("lol", "readed link: " + mangaItem.readedLink)
                         intent.putExtra("readedLink", mangaItem.readedLink)
                         fragment!!.startActivity(intent)
                     }

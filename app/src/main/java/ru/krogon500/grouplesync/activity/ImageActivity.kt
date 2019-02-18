@@ -32,18 +32,16 @@ import java.io.File
 import java.net.URL
 import java.util.*
 import java.util.regex.Pattern
-import kotlin.collections.HashMap
 
 class ImageActivity : AppCompatActivity() {
     private lateinit var mSettings: SharedPreferences
     internal var type: Byte = 0
     private lateinit var root: String
     internal var link: String? = null
-    //private lateinit var table_name: String
     internal var id: Long? = null
     private var ids: ArrayList<Long>? = null
     internal var chapters: ArrayList<String>? = null
-    private var paths = HashMap<String, String>()
+    private var paths = LinkedHashMap<String, String>()
     internal lateinit var progressBar: ProgressBar
     internal lateinit var uiHelper: SystemUiHelper
     private lateinit var mUser: String
@@ -80,18 +78,18 @@ class ImageActivity : AppCompatActivity() {
         mContext = this
 
 
-        view_pager!!.offscreenPageLimit = 1
-        rl!!.setOnApplyWindowInsetsListener { v, insets ->
+        view_pager.offscreenPageLimit = 1
+        rl.setOnApplyWindowInsetsListener { v, insets ->
             (v.layoutParams as ViewGroup.MarginLayoutParams).rightMargin = insets.systemWindowInsetRight
             insets.consumeSystemWindowInsets()
         }
+
         val adapter: ImageAdapter
         val action = intent.action
         val data = intent.dataString
         val args : Bundle
         if(ACTION_VIEW == action && data != null){
             fromBrowser = true
-            //Log.d("lol", data)
             type = if (data.contains("henchan")) Utils.HENTAI else Utils.GROUPLE
             online = true
             link = if (type == Utils.GROUPLE) data.split("#")[0] else data
@@ -125,9 +123,7 @@ class ImageActivity : AppCompatActivity() {
 
             if (args.containsKey("chapters")) {
                 chapters = args.getStringArrayList("chapters")
-                //Log.d("lol", "chapters size: ${chapters?.size ?: "null"}")
                 currentChapter = if (chapters != null) chapters!!.indexOf(link!!) else 0
-                //Log.d("lol", "current chapter: $currentChapter")
             }
             if (args.containsKey("page")) {
                 page = args.getInt("page")
@@ -138,12 +134,11 @@ class ImageActivity : AppCompatActivity() {
             val volAndChap = link!!.getVolAndChapter()
             vol = volAndChap[0]
             chapter = volAndChap[1]
-            //table_name = "'$id'"
-            textView!!.text = "Глава " + vol + " – " + chapter + ". Страница " + (page + 1)
+            textView.text = "Глава " + vol + " – " + chapter + ". Страница " + (page + 1)
         } else
-            textView!!.text = "Страница: ${page + 1}"
+            textView.text = "Страница: ${page + 1}"
 
-        rotateScreen!!.setOnClickListener {
+        rotateScreen.setOnClickListener {
             requestedOrientation = if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
                 ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             else
@@ -164,6 +159,7 @@ class ImageActivity : AppCompatActivity() {
             }
 
         })
+
         when {
             online -> {
                 val layout = findViewById<RelativeLayout>(R.id.rootView)
@@ -236,8 +232,6 @@ class ImageActivity : AppCompatActivity() {
 
         override fun doInBackground(vararg voids: Void): Boolean? {
 
-            //if (mSettings.getBoolean("remember", false) && !Utils.login(Utils.GROUPLE, mUser, mPass))
-            //    return false;
             try {
                 val url = URL(link)
                 val protocol = url.protocol
@@ -252,7 +246,6 @@ class ImageActivity : AppCompatActivity() {
                 val pattern = Pattern.compile("var nextChapterLink = \"(.*)\";")
                 val matcher = pattern.matcher(content)
                 if (matcher.find()) {
-                    //Log.d("lol", "next = " + String.format("%s://%s%s", protocol, host, matcher.group(1)));
                     nextChapter = String.format("%s://%s%s", protocol, host, matcher.group(1)).replace("?mtr=1", "")
                     if (nextChapter!!.contains("/list/like"))
                         nextChapter = null
@@ -261,7 +254,6 @@ class ImageActivity : AppCompatActivity() {
                 var needed = rows[rows.size - 1]
                 needed = needed.substring(needed.indexOf('[') + 1, needed.lastIndexOf(']'))
                 val parts = needed.split("],")
-                //int max = parts.length;
                 for (part in parts) {
                     val link = part.replace("[\\['\"\\]]".toRegex(), "").split(",")
                     val ext = link[2].split("\\?".toRegex())[0]
@@ -270,7 +262,6 @@ class ImageActivity : AppCompatActivity() {
                 }
                 return !isCancelled
             } catch (e: Exception) {
-                //Log.e("lol", e.localizedMessage)
                 e.printStackTrace(Utils.getPrintWriter())
                 return false
             }
@@ -307,20 +298,16 @@ class ImageActivity : AppCompatActivity() {
         private var images = ArrayList<String>()
 
         override fun doInBackground(vararg voids: Void): Boolean? {
-            //Log.d("lol", "workate 666");
             if (!Utils.login(Utils.HENTAI, mUser, mPass))
                 return false
             try {
-                //Log.d("lol", "workate 667");
                 val mainPage = Utils.getPage(Utils.HENTAI, mUser, mPass, link)
                 Log.d("lol", "link: $link")
-                //Log.d("lol", "doc: " + mainPage.html());
                 val script = mainPage.selectFirst("script:containsData(fullimg)")
                 val pattern = Pattern.compile("\"fullimg\":.+")
                 val matcher = pattern.matcher(script.html())
                 if (matcher.find()) {
                     val needed = matcher.group(0).replace("\"fullimg\":", "")
-                    //Log.d("lol", "needed: " + needed);
                     val pattern2 = Pattern.compile("([\"|'])(\\\\?.)*?\\1")
                     val matcher2 = pattern2.matcher(needed)
                     while (matcher2.find()) {
@@ -375,27 +362,26 @@ class ImageActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     internal fun onPageSelectedAction(position: Int) {
-        //Log.d("lol", "selected $position")
         val adapter1 = view_pager!!.adapter as? ImageAdapter ?: return
         page = ImageAdapter.offset - position - 1
         if (type == Utils.HENTAI) {
-            textView!!.text = "Страница: ${page + 1}/${ImageAdapter.offset}"
+            textView.text = "Страница: ${page + 1}/${ImageAdapter.offset}"
             if (page < 0) {
                 page = adapter1.count - position - 1
-                textView!!.text = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
+                textView.text = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
             if (position == 0)
                 adapter1.onZeroPos()
         } else {
-            textView!!.text = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
+            textView.text = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
             if (page < 0) {
-                link = link!!.replace("\\d+/\\d+$".toRegex(), "$prevvol/$prevchapter")
+                link = link?.replace("\\d+/\\d+$".toRegex(), "$prevvol/$prevchapter")
                 currentChapter = chapters!!.indexOf(link!!)
                 page = adapter1.count - position - 1
-                textView!!.text = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
+                textView.text = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
             if (adapter1.count > ImageAdapter.offset && position < ImageAdapter.offset) {
-                link = link!!.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
+                link = link?.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
                 currentChapter = chapters!!.indexOf(link!!)
             }
             if (position == 0) {
@@ -408,24 +394,24 @@ class ImageActivity : AppCompatActivity() {
     internal fun onPageScrolled(position: Int) {
         val adapter1 = view_pager!!.adapter as? ImageAdapter ?: return
         if (type == Utils.HENTAI && onFirst){
-            textView!!.text = "Страница: ${page + 1}/${ImageAdapter.offset}"
+            textView.text = "Страница: ${page + 1}/${ImageAdapter.offset}"
             if (page < 0) {
                 page = adapter1.count - position - 1
-                textView!!.text = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
+                textView.text = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
             if (position == 0)
                 adapter1.onZeroPos()
         }else if (type == Utils.GROUPLE && onFirst) {
             page = ImageAdapter.offset - position - 1
-            textView!!.text = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
+            textView.text = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
             if (page < 0) {
-                link = link!!.replace("\\d+/\\d+$".toRegex(), "$prevvol/$prevchapter")
+                link = link?.replace("\\d+/\\d+$".toRegex(), "$prevvol/$prevchapter")
                 currentChapter = chapters!!.indexOf(link!!)
                 page = adapter1.count - position - 1
-                textView!!.text = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
+                textView.text = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
             if (adapter1.count > ImageAdapter.offset && position < ImageAdapter.offset) {
-                link = link!!.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
+                link = link?.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
                 currentChapter = chapters!!.indexOf(link!!)
             }
             if (position == 0)
@@ -436,11 +422,6 @@ class ImageActivity : AppCompatActivity() {
 
     private fun ImageAdapter.onZeroPos() {
         if (type == Utils.GROUPLE) {
-            //val groupleBookmarksBox : Box<GroupleBookmark> = (application as App).boxStore.boxFor()
-            //val groupleChaptersBox : Box<GroupleChapter> = (application as App).boxStore.boxFor()
-            //val gBookmark = groupleBookmarksBox[id ?: return] ?: return
-
-            //val gChapters = gBookmark.chapters
 
             val gChapter = gChapters.find { it.link == link }
             if(gChapter != null) {
@@ -468,18 +449,13 @@ class ImageActivity : AppCompatActivity() {
                     this.nextChapter(paths["$vol.$chapter"]!!)
                 }
                 currentChapter = chapters!!.indexOf(link!!)
-                //Log.d("lol", "chapter index: " + chapters!!.indexOf(link!!))
             }else {
-                //currentChapter = chapters!!.indexOf(link!!)
-
                 if (chapters!!.size > currentChapter + 1) {
-                    //Log.d("lol", "link: " + chapters!![currentChapter + 1])
                     ImageAdapter.nextChapter = chapters!![currentChapter + 1]
                     link = ImageAdapter.nextChapter
                     val volAndChap = ImageAdapter.nextChapter!!.getVolAndChapter()
                     vol = volAndChap[0]
                     chapter = volAndChap[1]
-                    //Log.d("lol", "$vol/$chapter")
                     this.nextChapterOnline()
                 }
                 else
@@ -513,7 +489,7 @@ class ImageActivity : AppCompatActivity() {
         super.onResume()
         uiHelper.hide()
         if (ImageAdapter.opened) {
-            rl!!.animate().alpha(0.0f).duration = 100
+            rl.animate().alpha(0.0f).duration = 100
             ImageAdapter.opened = false
         }
     }

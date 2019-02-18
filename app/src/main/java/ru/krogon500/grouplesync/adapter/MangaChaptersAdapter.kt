@@ -27,10 +27,8 @@ import se.ajgarn.mpeventbus.MPEventBus
 class MangaChaptersAdapter(private val mContext: Context,
                            var gChapters: ToMany<GroupleChapter>,
                            var gChaptersBox: Box<GroupleChapter>) : BaseAdapter() {
-    //private final ArrayList<String> chapterTitles, links;
     val checkedItems: LinkedHashMap<Int, Boolean> = LinkedHashMap()
     var reversed: Boolean = false
-    //private var gChapters: ArrayList<GroupleChapter> = ArrayList()
 
     val isAllUnchecked: Boolean
         get() {
@@ -89,7 +87,6 @@ class MangaChaptersAdapter(private val mContext: Context,
 
     fun checkUnreaded() {
         gChapters.forEachIndexed { index, groupleChapter -> checkedItems[index] = !groupleChapter.readed }
-
         notifyDataSetChanged()
     }
 
@@ -153,7 +150,6 @@ class MangaChaptersAdapter(private val mContext: Context,
         }
         val chapterItem = gChapters[position]
 
-        //viewHolder.selected.setTag(links.get(position));
         viewHolder.selected!!.setOnCheckedChangeListener { _, b ->
             checkedItems[position] = b
             val dSel = (mContext as Activity).findViewById<HorizontalScrollView>(R.id.scroll)
@@ -172,7 +168,6 @@ class MangaChaptersAdapter(private val mContext: Context,
             viewHolder.pages!!.text = "Страница: ${chapterItem.page + 1}"
         else
             viewHolder.pages!!.text = "Страница: ${chapterItem.page + 1}/${chapterItem.page_all}"
-        //viewHolder.pages.setTag(pages[position]);
 
         viewHolder.pages!!.setTextColor(if (chapterItem.readed) Color.GRAY else Color.WHITE)
 

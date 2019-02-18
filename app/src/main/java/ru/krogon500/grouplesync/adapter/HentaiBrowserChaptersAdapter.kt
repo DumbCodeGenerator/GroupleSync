@@ -15,7 +15,6 @@ import ru.krogon500.grouplesync.entity.HentaiManga
 
 
 class HentaiBrowserChaptersAdapter(private val mContext: Context, var hChapters: ArrayList<HentaiManga>) : BaseAdapter() {
-    //private final ArrayList<String> chapterTitles, links, manga_ids;
 
     init {
         hChapters.forEach { it.setCover(HentaiBrowser.imageLoader, adapter2 = this@HentaiBrowserChaptersAdapter) }
