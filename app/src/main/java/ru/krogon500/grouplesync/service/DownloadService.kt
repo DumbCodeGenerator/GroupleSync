@@ -43,7 +43,6 @@ class DownloadService : Service() {
 
     @Subscribe
     fun onDownloadEvent(event: DownloadEvent) {
-        //Log.d("lol", "kochaet");
         addTaskAndExecute(event.link, event.title, event.position, event.manga_id, event.original_id, event.type, event.user, event.pass, event.bId)
     }
 
@@ -59,7 +58,6 @@ class DownloadService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        //Log.d("lol", flags.toString());
         if(intent != null) {
             if (intent.action == ACTION_CANCEL){
                 cancelled = true
