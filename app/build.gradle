@@ -56,7 +56,7 @@ android {
 }
 
 dependencies {
-    //implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.recyclerview:recyclerview:1.1.0-alpha02'
     implementation 'androidx.appcompat:appcompat:1.1.0-alpha02'
     implementation 'com.google.android.material:material:1.1.0-alpha03'
 
@@ -66,12 +66,6 @@ dependencies {
     implementation 'com.github.lzyzsd:circleprogress:1.2.1'
 
     implementation "io.objectbox:objectbox-kotlin:$objectboxVersion"
-    //implementation 'com.nolanlawson:supersaiyan-scrollview:1.2.0@aar'
-
-    //implementation 'com.jakewharton:butterknife:9.0.0-rc2'
-    //annotationProcessor 'com.jakewharton:butterknife-compiler:9.0.0-rc2'
-    //implementation 'com.jakewharton:butterknife:10.0.0'
-    //kapt 'com.jakewharton:butterknife-compiler:10.0.0'
 
     implementation 'com.github.piasy:BigImageViewer:1.5.6'
 

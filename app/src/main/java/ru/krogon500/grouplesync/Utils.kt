@@ -8,6 +8,8 @@ import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.ShapeDrawable
 import android.os.Build
 import android.os.Environment
 import android.text.Html
@@ -17,9 +19,10 @@ import android.util.TypedValue
 import android.view.View
 import android.view.animation.LinearInterpolator
 import android.view.inputmethod.InputMethodManager
-import android.widget.ListView
+import androidx.annotation.ColorInt
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.NotificationCompat
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.main_act2.*
@@ -290,18 +293,6 @@ object Utils {
         return intArrayOf(vol, chapter)
     }
 
-    fun ListView.getViewByPosition(pos: Int): View {
-        val firstListItemPosition = this.firstVisiblePosition
-        val lastListItemPosition = firstListItemPosition + this.childCount - 1
-
-        return if (pos < firstListItemPosition || pos > lastListItemPosition) {
-            this.adapter.getView(pos, null, this)
-        } else {
-            val childIndex = pos - firstListItemPosition
-            this.getChildAt(childIndex)
-        }
-    }
-
     fun Int.getDPI(context: Context): Int = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, this.toFloat(), context.resources.displayMetrics).toInt()
 
     @Suppress("DEPRECATION")
@@ -403,5 +394,16 @@ object Utils {
                 }
             }
         }
+    }
+
+    fun dividerItemDecor(context: Context?, @ColorInt color: Int = Color.DKGRAY): DividerItemDecoration{
+        val dividerItemDecor = DividerItemDecoration(context,
+                DividerItemDecoration.VERTICAL)
+        dividerItemDecor.setDrawable(ShapeDrawable().apply {
+            intrinsicHeight = 2
+            paint.color = color // note: currently (support version 28.0.0), we can not use tranparent color here, if we use transparent, we still see a small divider line. So if we want to display transparent space, we can set color = background color or we can create a custom ItemDecoration instead of DividerItemDecoration.
+        })
+
+        return dividerItemDecor
     }
 }

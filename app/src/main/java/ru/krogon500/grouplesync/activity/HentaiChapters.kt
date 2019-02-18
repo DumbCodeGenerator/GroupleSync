@@ -2,16 +2,16 @@ package ru.krogon500.grouplesync.activity
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Color
 import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
-import android.widget.AdapterView
-import android.widget.CheckBox
-import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import io.objectbox.relation.ToMany
 import kotlinx.android.synthetic.main.chapter_item.view.*
 import kotlinx.android.synthetic.main.manga_chapters.*
@@ -21,66 +21,42 @@ import org.greenrobot.eventbus.ThreadMode
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.Utils.getHQThumbnail
-import ru.krogon500.grouplesync.Utils.getViewByPosition
 import ru.krogon500.grouplesync.adapter.HentaiBrowserChaptersAdapter
 import ru.krogon500.grouplesync.adapter.HentaiChaptersAdapter
 import ru.krogon500.grouplesync.entity.HentaiManga
 import ru.krogon500.grouplesync.event.UpdateEvent
 import ru.krogon500.grouplesync.fragment.HentaiFragment
+import ru.krogon500.grouplesync.holder.ChaptersViewHolder
 import java.io.File
 import java.net.URL
 import java.util.regex.Pattern
 
-//import android.widget.Button;
-
-//import xiaofei.library.hermeseventbus.HermesEventBus;
-
 class HentaiChapters : AppCompatActivity() {
-    //internal lateinit var hentaiBookmarks: DbHelper
-    //SwipeRefreshLayout chaptersRefresh;
     private var manga_id: Long = 0
     var hChapters: ToMany<HentaiManga>? = null
     internal var originalHentai: HentaiManga? = null
     private var visPos: Int = 0
+    lateinit var layoutManager: LinearLayoutManager
 
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     fun onUpdateEvent(event: UpdateEvent) {
         if (event.type != Utils.HENTAI || event.original_id != manga_id)
             return
-        //Log.d("lol", "event2");
-        /*if(chaptersList == null)
-            chaptersList = (ListView)this.findViewById(R.id.chaptersList);*/
-        //Log.d("lol", event.position +"");
-        //Log.d("lol", chaptersList.getItemAtPosition(event.position).toString());
-        val view = chaptersList!!.getViewByPosition(event.position)
-        val adapter = chaptersList!!.adapter as HentaiChaptersAdapter
-        //ImageButton button = view.findViewById(R.id.download);
+        val view = chaptersList.findViewHolderForAdapterPosition(event.position)?.itemView ?: return
+        val adapter = chaptersList.adapter as HentaiChaptersAdapter
         val loading = view.chapterLoading
         val saved = view.saved
         if (saved != null)
-        //Log.d("lol", saved.getVisibility()+"");
             if (event.done && event.success) {
                 adapter.setSaved(event.position)
-                /*val values = ContentValues()
-                values.put(DbHelper.PAGE_ALL, event.max)
-                hentaiBookmarks.updateRow(DbHelper.HENTAIB_TABLE_NAME, values, DbHelper.ID, manga_id)*/
-                //adapter.notifyDataSetChanged();
             } else if (event.done) {
                 adapter.setDownload(event.position)
-                //adapter.notifyDataSetChanged();
             } else if (!event.success) {
                 adapter.setLoading(event.position)
-                //adapter.notifyDataSetChanged();
                 loading.max = event.max
                 loading.progress = event.current.toFloat()
-                //button.setVisibility();
             }
-    }
-
-    override fun onPause() {
-        visPos = chaptersList!!.firstVisiblePosition
-        super.onPause()
     }
 
     public override fun onStop() {
@@ -91,12 +67,14 @@ class HentaiChapters : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt("listPos", chaptersList!!.firstVisiblePosition)
+        visPos = layoutManager.findFirstCompletelyVisibleItemPosition()
+        outState.putInt("listPos", visPos)
         outState.putBoolean("fromBrowser", fromBrowser)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
+        visPos = savedInstanceState.getInt("listPos")
         fromBrowser = savedInstanceState.getBoolean("fromBrowser")
     }
 
@@ -119,6 +97,10 @@ class HentaiChapters : AppCompatActivity() {
 
         if (supportActionBar != null)
             supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+
+        layoutManager = LinearLayoutManager(this)
+        chaptersList.layoutManager = layoutManager
+        chaptersList.addItemDecoration(Utils.dividerItemDecor(this, Color.WHITE))
 
         val args = intent.extras!!
         link = args.getString("link")!!
@@ -175,9 +157,9 @@ class HentaiChapters : AppCompatActivity() {
         val checkedItems = adapter.checkedItems
         checkedItems.forEach {
             if (it.value) {
-                val v = chaptersList!!.getViewByPosition(it.key)
-                val c = v.findViewById<CheckBox>(R.id.selected)
-                val down = v.findViewById<ImageButton>(R.id.download)
+                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
+                val c = v.selected
+                val down = v.download
                 if (down.visibility == View.VISIBLE)
                     down.performClick()
                 c.isChecked = false
@@ -190,9 +172,9 @@ class HentaiChapters : AppCompatActivity() {
         val checkedItems = adapter.checkedItems
         checkedItems.forEach {
             if (it.value) {
-                val chapterItem = adapter.getItem(it.key) as HentaiManga
-                val v = chaptersList!!.getViewByPosition(it.key)
-                val c = v.findViewById<CheckBox>(R.id.selected)
+                val chapterItem = adapter.getItem(it.key)
+                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
+                val c = v.selected
                 c.isChecked = false
                 //ImageView saved = v.findViewById(R.id.saved);
                 if (!chapterItem.saved)
@@ -210,51 +192,58 @@ class HentaiChapters : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
-    internal fun onItemLongClick(view: View): Boolean {
-        val selected = view.findViewById<CheckBox>(R.id.selected)
-        selected.isChecked = !selected.isChecked
-        return true
-    }
-
-    internal fun onItemClick(parent: AdapterView<*>, view: View, position: Int) {
+    internal fun onBrowserChaptersClick(view: View) {
+        val viewHolder = view.tag as? HentaiBrowserChaptersAdapter.ViewHolder ?: return
+        val adapter = chaptersList.adapter as? HentaiBrowserChaptersAdapter ?: return
+        
+        val position = viewHolder.adapterPosition
         val links = ArrayList<String>()
         val ids = ArrayList<Long>()
-        if(!fromBrowser) {
-            val adapter = chaptersList.adapter as? HentaiChaptersAdapter ?: return
-            adapter.hChapters.forEach {
-                links.add(it.link)
-                ids.add(it.id)
-            }
-        }else{
-            val adapter = chaptersList.adapter as? HentaiBrowserChaptersAdapter ?: return
-            adapter.hChapters.forEach {
-                links.add(it.link)
-                ids.add(it.id)
-            }
+        val chapterItem: HentaiManga = adapter.getItem(position)
+        adapter.hChapters.forEach {
+            links.add(it.link)
+            ids.add(it.id)
         }
 
-        val chapterItem = parent.getItemAtPosition(position) as HentaiManga
-        val selected = view.findViewById<CheckBox>(R.id.selected)
+        val intent = Intent(this, ImageActivity::class.java)
+        Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
+        intent.putExtra("id", chapterItem.id)
+        intent.putExtra("ids", ids)
+        intent.putExtra("title", chapterItem.title)
+        intent.putExtra("type", Utils.HENTAI)
+        intent.putExtra("link", chapterItem.link)
+        intent.putExtra("chapters", links)
+        intent.putExtra("page", chapterItem.page)
+        intent.putExtra("online", !chapterItem.saved)
+        intent.putExtra("fromBrowser", fromBrowser)
 
-        if ((!fromBrowser && (chaptersList.adapter as? HentaiChaptersAdapter ?: return).isAllUnchecked) || fromBrowser) {
-            val intent = Intent(this, ImageActivity::class.java)
-            Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
-            intent.putExtra("id", chapterItem.id)
-            intent.putExtra("ids", ids)
-            intent.putExtra("title", chapterItem.title)
-            intent.putExtra("type", Utils.HENTAI)
-            intent.putExtra("link", chapterItem.link)
-            intent.putExtra("chapters", links)
-            intent.putExtra("page", chapterItem.page)
-            intent.putExtra("online", !chapterItem.saved)
+        startActivity(intent)
+    }
 
-            if(fromBrowser)
-                intent.putExtra("fromBrowser", fromBrowser)
-
-            startActivity(intent)
-        }  else {
-            selected.isChecked = !selected.isChecked
+    internal fun onChaptersClick(view: View){
+        val viewHolder = view.tag as? ChaptersViewHolder ?: return
+        val adapter = chaptersList.adapter as? HentaiChaptersAdapter ?: return
+        val position = viewHolder.adapterPosition
+        val links = ArrayList<String>()
+        val ids = ArrayList<Long>()
+        val chapterItem: HentaiManga = adapter.getItem(position)
+        adapter.hChapters.forEach {
+            links.add(it.link)
+            ids.add(it.id)
         }
+
+        val intent = Intent(this, ImageActivity::class.java)
+        Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
+        intent.putExtra("id", chapterItem.id)
+        intent.putExtra("ids", ids)
+        intent.putExtra("title", chapterItem.title)
+        intent.putExtra("type", Utils.HENTAI)
+        intent.putExtra("link", chapterItem.link)
+        intent.putExtra("chapters", links)
+        intent.putExtra("page", chapterItem.page)
+        intent.putExtra("online", !chapterItem.saved)
+
+        startActivity(intent)
     }
 
 
@@ -334,16 +323,25 @@ class HentaiChapters : AppCompatActivity() {
 
         }
 
-        override fun onPostExecute(success: Boolean?) {
+        override fun onPostExecute(success: Boolean) {
             chaptersRefresh!!.isRefreshing = false
             chaptersList.visibility = View.VISIBLE
-            if (success!!) {
-                val adapter = if(!fromBrowser) HentaiChaptersAdapter(this@HentaiChapters, originalHentai!!)
-                                            else HentaiBrowserChaptersAdapter(this@HentaiChapters, chapterItems)
+            if (success) {
+                val adapter: RecyclerView.Adapter<*>
+                if(!fromBrowser){
+                    adapter = HentaiChaptersAdapter(this@HentaiChapters, originalHentai!!)
+                    adapter.setItemClickListener(View.OnClickListener { onChaptersClick(it) })
+                } else {
+                    adapter = HentaiBrowserChaptersAdapter(chapterItems)
+                    adapter.setItemClickListener(View.OnClickListener { onBrowserChaptersClick(it) })
+                }
                 chaptersList.adapter = adapter
-                chaptersList.setSelection(visPos)
-                chaptersList.setOnItemClickListener { parent, view, position, _ ->  this@HentaiChapters.onItemClick(parent, view, position)}
-                chaptersList.setOnItemLongClickListener { _, view, _, _ ->  this@HentaiChapters.onItemLongClick(view)}
+                chaptersList.scrollToPosition(visPos)
+                /*chaptersList.addOnItemTouchListener(RecyclerItemClickListener(this@HentaiChapters, object : RecyclerItemClickListener.OnItemClickListener {
+                    override fun onBrowserChaptersClick(adapter: RecyclerView.Adapter<*>, position: Int) {
+                        this@HentaiChapters.onBrowserChaptersClick(adapter, position)
+                    }
+                }))*/
                 selectAll.setOnClickListener { onSelectAllClicked() }
                 downloadSelected.setOnClickListener { onDownloadSelectedClicked() }
                 deleteSelected.setOnClickListener { onDeleteSelectedClicked() }

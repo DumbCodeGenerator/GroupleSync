@@ -29,15 +29,12 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         android:layout_below="@+id/appBar">
 
-        <ListView
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/browseList"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:divider="@null"
-            android:dividerHeight="10dp"
-            android:nestedScrollingEnabled="true"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior"
-            tools:targetApi="lollipop" />
+            android:scrollbars="vertical"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 

@@ -4,10 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
-import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.manga_chapters.*
 import ru.krogon500.grouplesync.R
+import ru.krogon500.grouplesync.adapter.SimpleArrayAdapter
 import ru.krogon500.grouplesync.service.UpdateService.Companion.newChapters
 
 class UpdateNotif : AppCompatActivity(){
@@ -35,7 +35,7 @@ class UpdateNotif : AppCompatActivity(){
     }
 
     fun init(){
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, newChapters)
+        val adapter = SimpleArrayAdapter(newChapters, null)
         chaptersList.adapter = adapter
         chaptersList.visibility = View.VISIBLE
     }

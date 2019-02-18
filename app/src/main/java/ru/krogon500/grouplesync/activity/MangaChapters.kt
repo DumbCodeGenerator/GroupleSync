@@ -4,6 +4,7 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Color
 import android.os.AsyncTask
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -12,12 +13,13 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.LinearInterpolator
-import android.widget.*
-import android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE
+import android.widget.CheckBox
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
-import com.github.lzyzsd.circleprogress.DonutProgress
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import io.objectbox.relation.ToMany
@@ -33,13 +35,13 @@ import org.jsoup.nodes.TextNode
 import ru.krogon500.grouplesync.App
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.Utils
-import ru.krogon500.grouplesync.Utils.getViewByPosition
 import ru.krogon500.grouplesync.Utils.getVolAndChapter
 import ru.krogon500.grouplesync.adapter.MangaChaptersAdapter
 import ru.krogon500.grouplesync.entity.GroupleBookmark
 import ru.krogon500.grouplesync.entity.GroupleChapter
 import ru.krogon500.grouplesync.event.UpdateEvent
 import ru.krogon500.grouplesync.fragment.GroupleFragment
+import ru.krogon500.grouplesync.holder.ChaptersViewHolder
 import java.io.File
 import java.net.MalformedURLException
 import java.net.URL
@@ -52,6 +54,7 @@ class MangaChapters : AppCompatActivity() {
     internal lateinit var gChaptersBox: Box<GroupleChapter>
     internal lateinit var gChapters: ToMany<GroupleChapter>
     private var bookmark_id: Long = 0
+    lateinit var layoutManager: LinearLayoutManager
 
     private var visPos: Int = 0
 
@@ -60,11 +63,11 @@ class MangaChapters : AppCompatActivity() {
         if (event.type != Utils.GROUPLE)
             return
 
-        val view = chaptersList.getViewByPosition(event.position)
+        val view = chaptersList.findViewHolderForAdapterPosition(event.position)?.itemView ?: return
         val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
 
-        val loading = view.findViewById<DonutProgress>(R.id.chapterLoading)
-        val saved = view.findViewById<ImageView>(R.id.saved)
+        val loading = view.chapterLoading
+        val saved = view.saved
         if (saved != null)
             if (event.done && event.success) {
                 adapter.setSaved(event.position)
@@ -86,7 +89,7 @@ class MangaChapters : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        visPos = chaptersList.firstVisiblePosition
+        visPos = layoutManager.findFirstCompletelyVisibleItemPosition()
         outState.putInt("listPos", visPos)
     }
 
@@ -105,7 +108,7 @@ class MangaChapters : AppCompatActivity() {
             R.id.sync -> {
                 val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return true
                 val readed = adapter.getLastReaded()
-                val chapterItem = adapter.getItem(readed) as GroupleChapter
+                val chapterItem = adapter.getItem(readed)
                 Log.d("lol", "sync item: ${chapterItem.link}")
                 AddBookmarkTask(chapterItem.link, chapterItem.page).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?)
                 return true
@@ -114,7 +117,7 @@ class MangaChapters : AppCompatActivity() {
             R.id.a_z -> {
                 val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return true
                 adapter.reverse()
-                chaptersList.setSelection(0)
+                chaptersList.scrollToPosition(0)
                 return true
             }
 
@@ -140,10 +143,14 @@ class MangaChapters : AppCompatActivity() {
         if (supportActionBar != null)
             supportActionBar!!.setDisplayHomeAsUpEnabled(true)
 
+        layoutManager = LinearLayoutManager(this)
+        chaptersList.layoutManager = layoutManager
+        chaptersList.addItemDecoration(Utils.dividerItemDecor(this, Color.WHITE))
+
         fab.setOnClickListener {
             val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return@setOnClickListener
-            chaptersList.smoothScrollBy(0,0)
-            chaptersList.setSelection(adapter.getLastReaded())
+            chaptersList.stopScroll()
+            chaptersList.scrollToPosition(adapter.getLastReaded())
         }
 
         val args = intent.extras!!
@@ -156,9 +163,9 @@ class MangaChapters : AppCompatActivity() {
         if(gChapters.isNotEmpty())
             gChapters.sortByDescending { it.date }
 
-        chaptersRefresh!!.setColorSchemeColors(ContextCompat.getColor(this, R.color.colorAccent))
-        chaptersRefresh!!.isRefreshing = true
-        chaptersRefresh!!.setOnRefreshListener { GetMangaInfo(gBookmark.link, gBookmark.readedLink, true, gBookmark.page).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?) }
+        chaptersRefresh.setColorSchemeColors(ContextCompat.getColor(this, R.color.colorAccent))
+        chaptersRefresh.isRefreshing = true
+        chaptersRefresh.setOnRefreshListener { GetMangaInfo(gBookmark.link, gBookmark.readedLink, true, gBookmark.page).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?) }
 
         GetMangaInfo(gBookmark.link, gBookmark.readedLink, false, gBookmark.page).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?)
     }
@@ -189,7 +196,7 @@ class MangaChapters : AppCompatActivity() {
         gChapters = GroupleFragment.groupleBookmarksBox[bookmark_id].chapters
         val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
         adapter.update(gChapters)
-        chaptersList.setSelection(visPos)
+        chaptersList.scrollToPosition(if(adapter.reversed) Math.max(visPos, adapter.getLastReaded()) else Math.min(visPos, adapter.getLastReaded()))
     }
 
     fun onSelectAllClicked() {
@@ -208,9 +215,9 @@ class MangaChapters : AppCompatActivity() {
 
         checkedItems.forEach {
             if (it.value) {
-                val v = chaptersList.getViewByPosition(it.key)
+                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
                 val c = v.selected
-                val item = adapter.getItem(it.key) as GroupleChapter
+                val item = adapter.getItem(it.key)
                 Log.d("lol", "item title: ${item.title}")
                 item.readed = true
                 gChaptersBox.put(item)
@@ -226,7 +233,7 @@ class MangaChapters : AppCompatActivity() {
 
         checkedItems.forEach {
             if (it.value) {
-                val v = chaptersList.getViewByPosition(it.key)
+                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
                 val c = v.selected
                 val down = v.download
                 if (down.visibility == View.VISIBLE)
@@ -241,8 +248,8 @@ class MangaChapters : AppCompatActivity() {
         val checkedItems = adapter.checkedItems
         checkedItems.forEach {
             if (it.value) {
-                val chapterItem = adapter.getItem(it.key) as GroupleChapter
-                val v = chaptersList.getViewByPosition(it.key)
+                val chapterItem = adapter.getItem(it.key)
+                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
                 val c = v.findViewById<CheckBox>(R.id.selected)
                 c.isChecked = false
                 if (!chapterItem.saved)
@@ -261,15 +268,10 @@ class MangaChapters : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
-    internal fun onItemLongClick(view: View): Boolean {
-        val selected = view.findViewById<CheckBox>(R.id.selected)
-        selected.isChecked = !selected.isChecked
-        return true
-    }
-
-    internal fun onItemClick(parent: AdapterView<*>, view: View, position: Int) {
+    internal fun onItemClick(view: View){
+        val viewHolder = view.tag as? ChaptersViewHolder ?: return
         val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
-        val selected = view.findViewById<CheckBox>(R.id.selected)
+        val selected = view.selected
         val chapterLinks = ArrayList<String>()
         adapter.gChapters.forEach {
             chapterLinks.add(it.link)
@@ -278,7 +280,7 @@ class MangaChapters : AppCompatActivity() {
         if(!adapter.reversed)
             chapterLinks.reverse()
 
-        val chapterItem = parent.getItemAtPosition(position) as GroupleChapter
+        val chapterItem = adapter.getItem(viewHolder.adapterPosition)
         val link = chapterItem.link
         if (adapter.isAllUnchecked) {
             val intent = Intent(this, ImageActivity::class.java)
@@ -460,27 +462,25 @@ class MangaChapters : AppCompatActivity() {
                 val adapter: MangaChaptersAdapter
                 if(chaptersList.adapter == null) {
                     adapter = MangaChaptersAdapter(this@MangaChapters, gChapters, gChaptersBox)
+                    adapter.setItemClickListener(View.OnClickListener { onItemClick(it) })
                     chaptersList.adapter = adapter
                 }else{
                     adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
+                    adapter.setItemClickListener(View.OnClickListener { onItemClick(it) })
                     adapter.update(gChapters)
                 }
 
 
-
-
                 if(!refresh)
-                    chaptersList.setSelection(visPos)
+                    chaptersList.scrollToPosition(visPos)
 
-                chaptersList.setOnItemClickListener { parent, view, position, _ ->  this@MangaChapters.onItemClick(parent, view, position)}
-                chaptersList.setOnItemLongClickListener { _, view, _, _ ->  this@MangaChapters.onItemLongClick(view)}
                 selectAll.setOnClickListener { onSelectAllClicked() }
                 downloadSelected.setOnClickListener { onDownloadSelectedClicked() }
                 deleteSelected.setOnClickListener { onDeleteSelectedClicked() }
                 selectUnread.setOnClickListener { onSelectUnreadClicked() }
                 makeReaded.setOnClickListener { onMakeReadedClicked() }
 
-                chaptersList.setOnScrollListener(object : AbsListView.OnScrollListener {
+                chaptersList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                     var isAnimated = false
                     val duration = 150L
                     val listener = object: AnimatorListenerAdapter(){
@@ -510,17 +510,10 @@ class MangaChapters : AppCompatActivity() {
                         countDownTimer.start()
                     }
 
-                    override fun onScrollStateChanged(view: AbsListView, scrollState: Int) {
-                        if(scrollState == SCROLL_STATE_IDLE){
-                            countDownTimer.start()
-                        }else{
-                            countDownTimer.cancel()
-                        }
-                    }
-
-                    override fun onScroll(view: AbsListView, firstVisibleItem: Int, visibleItemCount: Int, totalItemCount: Int) {
-                        val scrollAdapter = view.adapter as? MangaChaptersAdapter ?: return
-                        val last = visibleItemCount + firstVisibleItem
+                    override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                        val scrollAdapter = recyclerView.adapter as? MangaChaptersAdapter ?: return
+                        val firstVisibleItem = layoutManager.findFirstCompletelyVisibleItemPosition()
+                        val last = layoutManager.itemCount
                         val readed = scrollAdapter.getLastReaded()
 
                         if(readed in firstVisibleItem until last && fab.translationY == 0f && !isAnimated){
@@ -533,6 +526,14 @@ class MangaChapters : AppCompatActivity() {
                             else
                                 fab.setImageDrawable(ContextCompat.getDrawable(applicationContext, R.drawable.arrow_up))
                             fab.animate().translationY(0f).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
+                        }
+                    }
+
+                    override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                        if(newState == RecyclerView.SCROLL_STATE_IDLE){
+                            countDownTimer.start()
+                        }else{
+                            countDownTimer.cancel()
                         }
                     }
                 })

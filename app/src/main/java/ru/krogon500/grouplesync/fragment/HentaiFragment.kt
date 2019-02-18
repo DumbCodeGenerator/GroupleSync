@@ -13,7 +13,6 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiskCache
 import com.nostra13.universalimageloader.core.DisplayImageOptions
@@ -25,13 +24,17 @@ import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
 import kotlinx.android.synthetic.main.fragment.*
 import org.jsoup.Connection
-import ru.krogon500.grouplesync.*
+import ru.krogon500.grouplesync.App
+import ru.krogon500.grouplesync.R
+import ru.krogon500.grouplesync.SpacesItemDecoration
+import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.Utils.getHQThumbnail
 import ru.krogon500.grouplesync.activity.HentaiChapters
 import ru.krogon500.grouplesync.activity.ImageActivity
 import ru.krogon500.grouplesync.adapter.HentaiAdapter
 import ru.krogon500.grouplesync.entity.HentaiManga
 import ru.krogon500.grouplesync.entity.HentaiManga_
+import ru.krogon500.grouplesync.holder.MangaCellsViewHolder
 import ru.krogon500.grouplesync.image_loaders.HentaiImageLoader
 import java.io.File
 import java.lang.ref.WeakReference
@@ -271,7 +274,7 @@ class HentaiFragment : Fragment() {
 
         }
 
-        override fun onPostExecute(aBoolean: Boolean?) {
+        override fun onPostExecute(aBoolean: Boolean) {
             super.onPostExecute(aBoolean)
             if (fragment == null)
                 return
@@ -280,41 +283,42 @@ class HentaiFragment : Fragment() {
             fragment!!.swipeRefresh.isRefreshing = false
             fragment!!.mHentaiTask = null
 
-            if (aBoolean!!) {
-                val adapter = fragment!!.mangaCells!!.adapter as? HentaiAdapter
-                if(adapter == null)
-                    fragment?.mangaCells?.adapter = HentaiAdapter(fragment?.activity ?: return, hentaiBox)
-                else
-                    adapter.update(hentaiBox)
+            if (aBoolean) {
+                val listener = View.OnClickListener {
+                    val viewHolder = it.tag as? MangaCellsViewHolder ?: return@OnClickListener
+                    val adapter = fragment?.mangaCells?.adapter as? HentaiAdapter ?: return@OnClickListener
+                    val position = viewHolder.adapterPosition
+                    val item = adapter.getItem(position)
 
-                fragment?.mangaCells?.addOnItemTouchListener(RecyclerItemClickListener(fragment?.context!!, object:RecyclerItemClickListener.OnItemClickListener{
-                    override fun onItemClick(adapter: RecyclerView.Adapter<RecyclerView.ViewHolder>, position: Int) {
-                        val item = (adapter as HentaiAdapter).getItem(position)
-
-                        if (item.hasChapters) {
-                            val intent = Intent(fragment!!.activity, HentaiChapters::class.java)
+                    if (item.hasChapters) {
+                        val intent = Intent(fragment!!.activity, HentaiChapters::class.java)
+                        intent.putExtra("id", item.id)
+                        intent.putExtra("link", item.link.replace("/online/", "/related/"))
+                        intent.putExtra("user", HentaiFragment.mUser)
+                        intent.putExtra("pass", HentaiFragment.mPass)
+                        fragment!!.startActivity(intent)
+                    } else {
+                        val intent = Intent(fragment!!.activity, ImageActivity::class.java)
+                        intent.putExtra("type", Utils.HENTAI)
+                        intent.putExtra("title", item.title)
+                        if (item.saved) {
                             intent.putExtra("id", item.id)
-                            intent.putExtra("link", item.link.replace("/online/", "/related/"))
+                            intent.putExtra("online", false)
+                        } else {
+                            intent.putExtra("link", item.link)
+                            intent.putExtra("online", true)
                             intent.putExtra("user", HentaiFragment.mUser)
                             intent.putExtra("pass", HentaiFragment.mPass)
-                            fragment!!.startActivity(intent)
-                        } else {
-                            val intent = Intent(fragment!!.activity, ImageActivity::class.java)
-                            intent.putExtra("type", Utils.HENTAI)
-                            intent.putExtra("title", item.title)
-                            if (item.saved) {
-                                intent.putExtra("id", item.id)
-                                intent.putExtra("online", false)
-                            } else {
-                                intent.putExtra("link", item.link)
-                                intent.putExtra("online", true)
-                                intent.putExtra("user", HentaiFragment.mUser)
-                                intent.putExtra("pass", HentaiFragment.mPass)
-                            }
-                            fragment!!.startActivity(intent)
                         }
+                        fragment!!.startActivity(intent)
                     }
-                }))
+                }
+
+                val adapter = fragment!!.mangaCells!!.adapter as? HentaiAdapter
+                if(adapter == null)
+                    fragment?.mangaCells?.adapter = HentaiAdapter(fragment?.activity ?: return, hentaiBox).also { it.setItemClickListener(listener) }
+                else
+                    adapter.update(hentaiBox)
             }
         }
 

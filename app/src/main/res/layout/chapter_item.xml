@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:paddingBottom="5dp"
+    android:background="?android:attr/selectableItemBackground"
     android:descendantFocusability="blocksDescendants">
 
     <TextView
@@ -30,11 +32,12 @@
         android:layout_alignStart="@+id/chapterTitle"
         android:layout_alignLeft="@+id/chapterTitle"
         android:layout_below="@+id/chapterTitle"
+        android:layout_marginStart="5dp"
         android:layout_marginLeft="5dp"
         android:layout_marginBottom="5dp"
         android:maxLines="1"
         android:padding="5sp"
-        android:text="Страница: –"
+        android:text="@string/page__"
         android:textColor="@android:color/background_light"
         android:textSize="12sp" />
 
@@ -73,7 +76,8 @@
             android:layout_height="match_parent"
             android:padding="15dp"
             android:visibility="gone"
-            app:srcCompat="@android:drawable/ic_menu_save" />
+            app:srcCompat="@android:drawable/ic_menu_save"
+            tools:ignore="ContentDescription" />
 
         <ImageButton
             android:id="@+id/download"
@@ -83,7 +87,8 @@
             android:background="@null"
             android:foregroundGravity="center_vertical"
             android:visibility="visible"
-            app:srcCompat="@android:drawable/stat_sys_download_done" />
+            app:srcCompat="@android:drawable/stat_sys_download_done"
+            tools:ignore="ContentDescription" />
     </FrameLayout>
 
 

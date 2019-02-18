@@ -1,20 +1,51 @@
 package ru.krogon500.grouplesync.adapter
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.hbrowser_elem.view.*
 import ru.krogon500.grouplesync.R
+import ru.krogon500.grouplesync.SpacesItemDecoration
 import ru.krogon500.grouplesync.activity.HentaiBrowser
 import ru.krogon500.grouplesync.entity.HentaiManga
 
 
-class HentaiBrowserChaptersAdapter(private val mContext: Context, var hChapters: ArrayList<HentaiManga>) : BaseAdapter() {
+class HentaiBrowserChaptersAdapter(var hChapters: ArrayList<HentaiManga>) : ClickableRecyclerViewAdapter<HentaiBrowserChaptersAdapter.ViewHolder>() {
+    val space = 30
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val itemView = LayoutInflater.from(parent.context)
+                .inflate(R.layout.hbrowser_elem, parent, false)
+        return ViewHolder(itemView, onItemClickListener)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val chapterItem = hChapters[position]
+
+        holder.title.text = chapterItem.title
+        holder.series.text = String.format("Серия: %s", chapterItem.series)
+
+        if(chapterItem.cover != null)
+            holder.covers.setImageBitmap(chapterItem.cover)
+        else
+            holder.covers.setImageResource(android.R.color.darker_gray)
+
+        holder.pluses.visibility = View.GONE
+        holder.tags.visibility = View.GONE
+    }
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        if(recyclerView.itemDecorationCount > 0 && recyclerView.getItemDecorationAt(0) is DividerItemDecoration){
+            recyclerView.removeItemDecorationAt(0)
+            recyclerView.addItemDecoration(SpacesItemDecoration(space))
+        }else if(recyclerView.itemDecorationCount == 0){
+            recyclerView.addItemDecoration(SpacesItemDecoration(space))
+        }
+    }
 
     init {
         hChapters.forEach { it.setCover(HentaiBrowser.imageLoader, adapter2 = this@HentaiBrowserChaptersAdapter) }
@@ -26,11 +57,11 @@ class HentaiBrowserChaptersAdapter(private val mContext: Context, var hChapters:
         notifyDataSetChanged()
     }
 
-    override fun getCount(): Int {
+    override fun getItemCount(): Int {
         return hChapters.size
     }
 
-    override fun getItem(i: Int): Any {
+    fun getItem(i: Int): HentaiManga {
         return hChapters[i]
     }
 
@@ -38,46 +69,15 @@ class HentaiBrowserChaptersAdapter(private val mContext: Context, var hChapters:
         return hChapters[i].id
     }
 
-    @SuppressLint("SetTextI18n")
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        var convertView = convertView
-        val viewHolder: ViewHolder
-        if (convertView == null) {
-            val inflater = (mContext
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater)
-            convertView = inflater.inflate(R.layout.hbrowser_elem, parent, false)
-            viewHolder = ViewHolder()
-            viewHolder.title = convertView!!.title
-            viewHolder.series = convertView.series
-            viewHolder.pluses = convertView.pluses
-            viewHolder.tags = convertView.tags
-            viewHolder.covers = convertView.cover
-            convertView.tag = viewHolder
-        } else {
-            viewHolder = convertView.tag as ViewHolder
+    class ViewHolder(itemView: View, listener: View.OnClickListener?): RecyclerView.ViewHolder(itemView){
+        val title: TextView = itemView.title
+        val series: TextView = itemView.series
+        val pluses: TextView = itemView.pluses
+        val tags: TextView = itemView.tags
+        val covers: ImageView = itemView.cover
+        init {
+            itemView.tag = this
+            itemView.setOnClickListener(listener)
         }
-        val chapterItem = hChapters[position]
-
-        viewHolder.title.text = chapterItem.title
-        viewHolder.series.text = "Серия: ${chapterItem.series}"
-
-        if(chapterItem.cover != null)
-            viewHolder.covers.setImageBitmap(chapterItem.cover)
-        else
-            viewHolder.covers.setImageResource(android.R.color.darker_gray)
-
-        viewHolder.pluses.visibility = View.GONE
-        viewHolder.tags.visibility = View.GONE
-
-        return convertView
-
-    }
-
-    private class ViewHolder {
-        internal lateinit var title: TextView
-        internal lateinit var series: TextView
-        internal lateinit var pluses: TextView
-        internal lateinit var tags: TextView
-        internal lateinit var covers: ImageView
     }
 }

@@ -7,7 +7,6 @@ import android.util.SparseArray
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.RecyclerView
 import io.objectbox.Box
 import io.objectbox.kotlin.query
 import org.greenrobot.eventbus.EventBus
@@ -27,7 +26,7 @@ import se.ajgarn.mpeventbus.MPEventBus
 import java.io.File
 import java.util.*
 
-class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Box<HentaiManga>) : RecyclerView.Adapter<MangaCellsViewHolder>() {
+class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Box<HentaiManga>) : ClickableRecyclerViewAdapter<MangaCellsViewHolder>() {
     
     private lateinit var hentaiManga: ArrayList<HentaiManga>
     private val progresses = SparseArray<CustomArray>()
@@ -43,7 +42,7 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MangaCellsViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.cellgrid, parent, false)
-        return MangaCellsViewHolder(itemView)
+        return MangaCellsViewHolder(itemView, onItemClickListener)
     }
 
     fun Box<HentaiManga>.init(){
@@ -66,22 +65,13 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     fun onUpdateEvent(event: UpdateEvent) {
-        //Log.d("lol", "BASELINK NE NULL on mainAdapter");
         if (event.type != Utils.HENTAI || event.original_id != null)
             return
-        //Log.d("lol", "UpdateEvent on mainAdapter");
         if (event.done && event.success) {
-            //Log.d("lol", "done success on mainAdapter");
             setSaved(event.position)
-        } else if (event.done) {
-            //Log.d("lol", "done unsuccess on mainAdapter");
             setDownload(event.position)
         } else if (!event.success) {
-            //Log.d("lol", "loading on mainAdapter");
             setLoading(event.position, event.max, event.current)
-            //loading.setMax(event.max);
-            //loading.setProgress(event.current);
-            //button.setVisibility();
         }
     }
 
@@ -101,7 +91,6 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
         if (progresses.get(position) != null)
             progresses.removeAt(position)
         hentaiBookmarksBox.put(item)
-        //progresses.get(position).setVisibility(View.GONE);
         notifyDataSetChanged()
     }
 
@@ -131,8 +120,6 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
 
     override fun onBindViewHolder(holder: MangaCellsViewHolder, position: Int) {
         val item = hentaiManga[position]
-        /*if (!data.moveToPosition(position))
-            return null;*/
         holder.textView.text = item.title
         holder.imageView.adjustViewBounds = true
 
@@ -143,7 +130,6 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
         else
             holder.imageView.setImageResource(android.R.color.darker_gray)
 
-        //holder.imageView.setTag(ids.get(position));
         when {
             item.hasChapters -> {
                 holder.hentaiSaved.visibility = View.GONE
@@ -167,7 +153,6 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
                 }
             }
             item.downloading -> {
-                //Log.d("lol", "view pos: " + position);
                 holder.hentaiSaved.visibility = View.GONE
                 holder.hentaiDown.visibility = View.VISIBLE
                 if (progresses.get(position) != null) {
@@ -175,7 +160,6 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
                     val sets = progresses.get(position)
                     holder.hentaiDown.progress = sets.current.toFloat()
                     holder.hentaiDown.max = sets.max
-                    //Log.d("lol", "downloading + pogresses: " + position + " / " + (progresses.get(position).getVisibility() == View.VISIBLE ? "visible" : "gone"));
                 } else {
                     holder.hentaiDown.visibility = View.GONE
                 }

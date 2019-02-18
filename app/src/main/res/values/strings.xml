@@ -8,4 +8,10 @@
     <string name="error_invalid_password">Пароль слишком короткий</string>
     <string name="error_incorrect_password">Неверный логин и/или пароль</string>
     <string name="error_field_required">Это поле не может быть пустым</string>
+    <string name="select_all">Выделить все</string>
+    <string name="select_unreaded">Выделить непрочитанные</string>
+    <string name="mark_as_readed">Пометить как прочитанное</string>
+    <string name="download_selected">Скачать выбранные</string>
+    <string name="delete_selected">Удалить выбранные</string>
+    <string name="page__">Страница: —</string>
 </resources>

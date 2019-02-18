@@ -8,8 +8,6 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:statusBarColor">@color/colorPrimary</item>
         <item name="android:navigationBarColor">@color/colorPrimary</item>
-        <item name="android:fastScrollThumbDrawable">@drawable/scrollbar_thumb</item>
-        <item name="android:fastScrollTrackDrawable">@android:color/transparent</item>
         <item name="actionOverflowMenuStyle">@style/OverflowMenuStyle</item>
 
         <!--

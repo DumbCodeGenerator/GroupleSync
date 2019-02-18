@@ -17,7 +17,6 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiskCache
 import com.nostra13.universalimageloader.core.DisplayImageOptions
@@ -30,11 +29,15 @@ import io.objectbox.kotlin.query
 import kotlinx.android.synthetic.main.fragment.*
 import kotlinx.android.synthetic.main.main_act2.*
 import org.jsoup.Connection
-import ru.krogon500.grouplesync.*
+import ru.krogon500.grouplesync.App
+import ru.krogon500.grouplesync.R
+import ru.krogon500.grouplesync.SpacesItemDecoration
+import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.activity.MangaChapters
 import ru.krogon500.grouplesync.adapter.GroupleAdapter
 import ru.krogon500.grouplesync.entity.GroupleBookmark
 import ru.krogon500.grouplesync.entity.GroupleBookmark_
+import ru.krogon500.grouplesync.holder.MangaCellsViewHolder
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.*
@@ -285,27 +288,28 @@ class GroupleFragment : Fragment() {
             fragment?.mGetBookmarksTask = null
 
             if (aBoolean) {
+                val listener = View.OnClickListener {
+                    val viewHolder = it.tag as? MangaCellsViewHolder ?: return@OnClickListener
+                    val adapter = fragment?.mangaCells?.adapter as? GroupleAdapter ?: return@OnClickListener
+                    val position = viewHolder.adapterPosition
+                    val mangaItem = adapter.getItem(position)
+
+                    val intent = Intent(fragment!!.activity, MangaChapters::class.java)
+                    intent.putExtra("id", mangaItem.id)
+                    intent.putExtra("page", mangaItem.page)
+                    intent.putExtra("mangaTitle", mangaItem.title)
+                    intent.putExtra("baseLink", mangaItem.link)
+                    intent.putExtra("readedLink", mangaItem.readedLink)
+                    fragment!!.startActivity(intent)
+                }
+
                 val adapter = fragment?.mangaCells?.adapter as? GroupleAdapter
                 if(adapter == null){
-                    fragment?.mangaCells?.adapter = GroupleAdapter(fragment?.activity ?: return, groupleBookmarksBox)
+                    fragment?.mangaCells?.adapter = GroupleAdapter(fragment?.activity ?: return, groupleBookmarksBox).also { it.setItemClickListener(listener) }
                 }else{
                     adapter.update(groupleBookmarksBox)
                 }
                 fragment?.registerForContextMenu(fragment?.mangaCells!!)
-
-                fragment?.mangaCells?.addOnItemTouchListener(RecyclerItemClickListener(fragment?.context!!, object : RecyclerItemClickListener.OnItemClickListener {
-                    override fun onItemClick(adapter: RecyclerView.Adapter<RecyclerView.ViewHolder>, position: Int) {
-                        val mangaItem = (adapter as GroupleAdapter).getItem(position)
-
-                        val intent = Intent(fragment!!.activity, MangaChapters::class.java)
-                        intent.putExtra("id", mangaItem.id)
-                        intent.putExtra("page", mangaItem.page)
-                        intent.putExtra("mangaTitle", mangaItem.title)
-                        intent.putExtra("baseLink", mangaItem.link)
-                        intent.putExtra("readedLink", mangaItem.readedLink)
-                        fragment!!.startActivity(intent)
-                    }
-                }))
             }
         }
 
