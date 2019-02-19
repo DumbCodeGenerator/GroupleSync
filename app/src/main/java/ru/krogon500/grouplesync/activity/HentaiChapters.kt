@@ -26,7 +26,7 @@ import ru.krogon500.grouplesync.adapter.HentaiChaptersAdapter
 import ru.krogon500.grouplesync.entity.HentaiManga
 import ru.krogon500.grouplesync.event.UpdateEvent
 import ru.krogon500.grouplesync.fragment.HentaiFragment
-import ru.krogon500.grouplesync.holder.ChaptersViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import java.io.File
 import java.net.URL
 import java.util.regex.Pattern
@@ -192,60 +192,61 @@ class HentaiChapters : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
-    internal fun onBrowserChaptersClick(view: View) {
-        val viewHolder = view.tag as? HentaiBrowserChaptersAdapter.ViewHolder ?: return
-        val adapter = chaptersList.adapter as? HentaiBrowserChaptersAdapter ?: return
-        
-        val position = viewHolder.adapterPosition
-        val links = ArrayList<String>()
-        val ids = ArrayList<Long>()
-        val chapterItem: HentaiManga = adapter.getItem(position)
-        adapter.hChapters.forEach {
-            links.add(it.link)
-            ids.add(it.id)
+    private val onBrowserClickListener = object : OnItemClickListener{
+        override fun onItemClick(view: View, position: Int) {
+            val adapter = chaptersList.adapter as? HentaiBrowserChaptersAdapter ?: return
+
+            val links = ArrayList<String>()
+            val ids = ArrayList<Long>()
+            val chapterItem: HentaiManga = adapter.getItem(position)
+            adapter.hChapters.forEach {
+                links.add(it.link)
+                ids.add(it.id)
+            }
+
+            val intent = Intent(this@HentaiChapters, ImageActivity::class.java)
+            Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
+            intent.putExtra("id", chapterItem.id)
+            intent.putExtra("ids", ids)
+            intent.putExtra("title", chapterItem.title)
+            intent.putExtra("type", Utils.HENTAI)
+            intent.putExtra("link", chapterItem.link)
+            intent.putExtra("chapters", links)
+            intent.putExtra("page", chapterItem.page)
+            intent.putExtra("online", !chapterItem.saved)
+            intent.putExtra("fromBrowser", fromBrowser)
+
+            startActivity(intent)
         }
 
-        val intent = Intent(this, ImageActivity::class.java)
-        Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
-        intent.putExtra("id", chapterItem.id)
-        intent.putExtra("ids", ids)
-        intent.putExtra("title", chapterItem.title)
-        intent.putExtra("type", Utils.HENTAI)
-        intent.putExtra("link", chapterItem.link)
-        intent.putExtra("chapters", links)
-        intent.putExtra("page", chapterItem.page)
-        intent.putExtra("online", !chapterItem.saved)
-        intent.putExtra("fromBrowser", fromBrowser)
-
-        startActivity(intent)
     }
 
-    internal fun onChaptersClick(view: View){
-        val viewHolder = view.tag as? ChaptersViewHolder ?: return
-        val adapter = chaptersList.adapter as? HentaiChaptersAdapter ?: return
-        val position = viewHolder.adapterPosition
-        val links = ArrayList<String>()
-        val ids = ArrayList<Long>()
-        val chapterItem: HentaiManga = adapter.getItem(position)
-        adapter.hChapters.forEach {
-            links.add(it.link)
-            ids.add(it.id)
+    private val onChapterClickListener = object : OnItemClickListener{
+        override fun onItemClick(view: View, position: Int) {
+            val adapter = chaptersList.adapter as? HentaiChaptersAdapter ?: return
+
+            val links = ArrayList<String>()
+            val ids = ArrayList<Long>()
+            val chapterItem: HentaiManga = adapter.getItem(position)
+            adapter.hChapters.forEach {
+                links.add(it.link)
+                ids.add(it.id)
+            }
+
+            val intent = Intent(this@HentaiChapters, ImageActivity::class.java)
+            Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
+            intent.putExtra("id", chapterItem.id)
+            intent.putExtra("ids", ids)
+            intent.putExtra("title", chapterItem.title)
+            intent.putExtra("type", Utils.HENTAI)
+            intent.putExtra("link", chapterItem.link)
+            intent.putExtra("chapters", links)
+            intent.putExtra("page", chapterItem.page)
+            intent.putExtra("online", !chapterItem.saved)
+
+            startActivity(intent)
         }
-
-        val intent = Intent(this, ImageActivity::class.java)
-        Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
-        intent.putExtra("id", chapterItem.id)
-        intent.putExtra("ids", ids)
-        intent.putExtra("title", chapterItem.title)
-        intent.putExtra("type", Utils.HENTAI)
-        intent.putExtra("link", chapterItem.link)
-        intent.putExtra("chapters", links)
-        intent.putExtra("page", chapterItem.page)
-        intent.putExtra("online", !chapterItem.saved)
-
-        startActivity(intent)
     }
-
 
     @SuppressLint("StaticFieldLeak")
     private inner class GetHentaiInfo
@@ -329,19 +330,13 @@ class HentaiChapters : AppCompatActivity() {
             if (success) {
                 val adapter: RecyclerView.Adapter<*>
                 if(!fromBrowser){
-                    adapter = HentaiChaptersAdapter(this@HentaiChapters, originalHentai!!)
-                    adapter.setItemClickListener(View.OnClickListener { onChaptersClick(it) })
+                    adapter = HentaiChaptersAdapter(this@HentaiChapters, originalHentai!!, onChapterClickListener)
                 } else {
-                    adapter = HentaiBrowserChaptersAdapter(chapterItems)
-                    adapter.setItemClickListener(View.OnClickListener { onBrowserChaptersClick(it) })
+                    adapter = HentaiBrowserChaptersAdapter(chapterItems, onBrowserClickListener)
                 }
                 chaptersList.adapter = adapter
                 chaptersList.scrollToPosition(visPos)
-                /*chaptersList.addOnItemTouchListener(RecyclerItemClickListener(this@HentaiChapters, object : RecyclerItemClickListener.OnItemClickListener {
-                    override fun onBrowserChaptersClick(adapter: RecyclerView.Adapter<*>, position: Int) {
-                        this@HentaiChapters.onBrowserChaptersClick(adapter, position)
-                    }
-                }))*/
+
                 selectAll.setOnClickListener { onSelectAllClicked() }
                 downloadSelected.setOnClickListener { onDownloadSelectedClicked() }
                 deleteSelected.setOnClickListener { onDeleteSelectedClicked() }

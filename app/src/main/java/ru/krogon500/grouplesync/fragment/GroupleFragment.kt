@@ -37,7 +37,7 @@ import ru.krogon500.grouplesync.activity.MangaChapters
 import ru.krogon500.grouplesync.adapter.GroupleAdapter
 import ru.krogon500.grouplesync.entity.GroupleBookmark
 import ru.krogon500.grouplesync.entity.GroupleBookmark_
-import ru.krogon500.grouplesync.holder.MangaCellsViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.*
@@ -288,24 +288,24 @@ class GroupleFragment : Fragment() {
             fragment?.mGetBookmarksTask = null
 
             if (aBoolean) {
-                val listener = View.OnClickListener {
-                    val viewHolder = it.tag as? MangaCellsViewHolder ?: return@OnClickListener
-                    val adapter = fragment?.mangaCells?.adapter as? GroupleAdapter ?: return@OnClickListener
-                    val position = viewHolder.adapterPosition
-                    val mangaItem = adapter.getItem(position)
+                val listener = object : OnItemClickListener {
+                    override fun onItemClick(view: View, position: Int) {
+                        val adapter = fragment?.mangaCells?.adapter as? GroupleAdapter ?: return
+                        val mangaItem = adapter.getItem(position)
 
-                    val intent = Intent(fragment!!.activity, MangaChapters::class.java)
-                    intent.putExtra("id", mangaItem.id)
-                    intent.putExtra("page", mangaItem.page)
-                    intent.putExtra("mangaTitle", mangaItem.title)
-                    intent.putExtra("baseLink", mangaItem.link)
-                    intent.putExtra("readedLink", mangaItem.readedLink)
-                    fragment!!.startActivity(intent)
+                        val intent = Intent(fragment!!.activity, MangaChapters::class.java)
+                        intent.putExtra("id", mangaItem.id)
+                        intent.putExtra("page", mangaItem.page)
+                        intent.putExtra("mangaTitle", mangaItem.title)
+                        intent.putExtra("baseLink", mangaItem.link)
+                        intent.putExtra("readedLink", mangaItem.readedLink)
+                        fragment!!.startActivity(intent)
+                    }
                 }
 
                 val adapter = fragment?.mangaCells?.adapter as? GroupleAdapter
                 if(adapter == null){
-                    fragment?.mangaCells?.adapter = GroupleAdapter(fragment?.activity ?: return, groupleBookmarksBox).also { it.setItemClickListener(listener) }
+                    fragment?.mangaCells?.adapter = GroupleAdapter(groupleBookmarksBox, listener)
                 }else{
                     adapter.update(groupleBookmarksBox)
                 }

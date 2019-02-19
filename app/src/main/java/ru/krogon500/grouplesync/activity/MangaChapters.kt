@@ -41,7 +41,7 @@ import ru.krogon500.grouplesync.entity.GroupleBookmark
 import ru.krogon500.grouplesync.entity.GroupleChapter
 import ru.krogon500.grouplesync.event.UpdateEvent
 import ru.krogon500.grouplesync.fragment.GroupleFragment
-import ru.krogon500.grouplesync.holder.ChaptersViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import java.io.File
 import java.net.MalformedURLException
 import java.net.URL
@@ -150,7 +150,7 @@ class MangaChapters : AppCompatActivity() {
         fab.setOnClickListener {
             val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return@setOnClickListener
             chaptersList.stopScroll()
-            chaptersList.scrollToPosition(adapter.getLastReaded())
+            layoutManager.scrollToPositionWithOffset(adapter.getLastReaded(), chaptersList.height/2)
         }
 
         val args = intent.extras!!
@@ -268,36 +268,37 @@ class MangaChapters : AppCompatActivity() {
         adapter.notifyDataSetChanged()
     }
 
-    internal fun onItemClick(view: View){
-        val viewHolder = view.tag as? ChaptersViewHolder ?: return
-        val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
-        val selected = view.selected
-        val chapterLinks = ArrayList<String>()
-        adapter.gChapters.forEach {
-            chapterLinks.add(it.link)
+    private val onItemClickListener = object : OnItemClickListener{
+        override fun onItemClick(view: View, position: Int) {
+            val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
+            val selected = view.selected
+            val chapterLinks = ArrayList<String>()
+            adapter.gChapters.forEach {
+                chapterLinks.add(it.link)
+            }
+
+            if(!adapter.reversed)
+                chapterLinks.reverse()
+
+            val chapterItem = adapter.getItem(position)
+            val link = chapterItem.link
+            if (adapter.isAllUnchecked) {
+                val intent = Intent(this@MangaChapters, ImageActivity::class.java)
+                intent.putExtra("id", bookmark_id)
+                intent.putExtra("link", link)
+                intent.putExtra("chapters", chapterLinks)
+                intent.putExtra("vol", chapterItem.vol)
+                intent.putExtra("chapter", chapterItem.chap)
+                intent.putExtra("type", Utils.GROUPLE)
+                intent.putExtra("online", !chapterItem.saved)
+                intent.putExtra("page", chapterItem.page)
+                startActivity(intent)
+            } else {
+                selected.isChecked = !selected.isChecked
+            }
         }
 
-        if(!adapter.reversed)
-            chapterLinks.reverse()
-
-        val chapterItem = adapter.getItem(viewHolder.adapterPosition)
-        val link = chapterItem.link
-        if (adapter.isAllUnchecked) {
-            val intent = Intent(this, ImageActivity::class.java)
-            intent.putExtra("id", bookmark_id)
-            intent.putExtra("link", link)
-            intent.putExtra("chapters", chapterLinks)
-            intent.putExtra("vol", chapterItem.vol)
-            intent.putExtra("chapter", chapterItem.chap)
-            intent.putExtra("type", Utils.GROUPLE)
-            intent.putExtra("online", !chapterItem.saved)
-            intent.putExtra("page", chapterItem.page)
-            startActivity(intent)
-        } else {
-            selected.isChecked = !selected.isChecked
-        }
     }
-
 
     @SuppressLint("StaticFieldLeak")
     private inner class AddBookmarkTask internal constructor(private val link: String, private val page: Int) : AsyncTask<Void, Void, Boolean>() {
@@ -461,12 +462,10 @@ class MangaChapters : AppCompatActivity() {
             if (success!!) {
                 val adapter: MangaChaptersAdapter
                 if(chaptersList.adapter == null) {
-                    adapter = MangaChaptersAdapter(this@MangaChapters, gChapters, gChaptersBox)
-                    adapter.setItemClickListener(View.OnClickListener { onItemClick(it) })
+                    adapter = MangaChaptersAdapter(this@MangaChapters, gChapters, gChaptersBox, onItemClickListener)
                     chaptersList.adapter = adapter
                 }else{
                     adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
-                    adapter.setItemClickListener(View.OnClickListener { onItemClick(it) })
                     adapter.update(gChapters)
                 }
 
@@ -492,7 +491,7 @@ class MangaChapters : AppCompatActivity() {
                         }
                     }
 
-                    val countDownTimer = object: CountDownTimer(1300, 1000){
+                    val countDownTimer = object: CountDownTimer(2000, 1000){
                         override fun onFinish() {
                             if(fab.translationY == 0f && !isAnimated){
                                 val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
@@ -513,18 +512,16 @@ class MangaChapters : AppCompatActivity() {
                     override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                         val scrollAdapter = recyclerView.adapter as? MangaChaptersAdapter ?: return
                         val firstVisibleItem = layoutManager.findFirstCompletelyVisibleItemPosition()
-                        val last = layoutManager.itemCount
+                        val last = layoutManager.findLastVisibleItemPosition()
                         val readed = scrollAdapter.getLastReaded()
 
-                        if(readed in firstVisibleItem until last && fab.translationY == 0f && !isAnimated){
+                        if(readed in firstVisibleItem..last && fab.translationY == 0f && !isAnimated){
                             val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
                             val fab_bottomMargin = layoutParams.bottomMargin
                             fab.animate().translationY((fab.height + fab_bottomMargin).toFloat()).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
-                        }else if(readed !in firstVisibleItem until last && fab.translationY > 0 && !isAnimated){
-                            if(readed > firstVisibleItem)
-                                fab.setImageDrawable(ContextCompat.getDrawable(applicationContext, R.drawable.arrow_down))
-                            else
-                                fab.setImageDrawable(ContextCompat.getDrawable(applicationContext, R.drawable.arrow_up))
+                        }else if(readed !in firstVisibleItem..last && fab.translationY > 0 && !isAnimated){
+                            fab.setImageDrawable(ContextCompat.getDrawable(applicationContext, if(readed > firstVisibleItem) R.drawable.arrow_down else R.drawable.arrow_up))
+
                             fab.animate().translationY(0f).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
                         }
                     }

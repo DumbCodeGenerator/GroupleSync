@@ -9,9 +9,10 @@ import kotlinx.android.synthetic.main.hbrowser_elem.view.*
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.SpacesItemDecoration
 import ru.krogon500.grouplesync.holder.ClickableViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.items.MangaItem
 
-class HBrowserAdapter(private var mangaItems: ArrayList<MangaItem> = ArrayList(), var addFooter: Boolean = false) : ClickableRecyclerViewAdapter<RecyclerView.ViewHolder>() {
+class HBrowserAdapter(private var mangaItems: ArrayList<MangaItem> = ArrayList(), var addFooter: Boolean = false, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     val FOOTER_VIEW = 1
     val space = 30
     var selectedItem: Int? = null
@@ -40,7 +41,7 @@ class HBrowserAdapter(private var mangaItems: ArrayList<MangaItem> = ArrayList()
         }else{
             val itemView = LayoutInflater.from(parent.context)
                     .inflate(R.layout.hbrowser_elem, parent, false)
-            ItemViewHolder(itemView, onItemClickListener)
+            ItemViewHolder(itemView, listener)
         }
     }
 
@@ -95,7 +96,7 @@ class HBrowserAdapter(private var mangaItems: ArrayList<MangaItem> = ArrayList()
         }
     }
 
-    class ItemViewHolder(itemView: View, listener: View.OnClickListener?): ClickableViewHolder(itemView, listener), View.OnCreateContextMenuListener{
+    class ItemViewHolder(itemView: View, listener: OnItemClickListener?): ClickableViewHolder(itemView, listener), View.OnCreateContextMenuListener{
         override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
             menu?.add(Menu.NONE, 1, 0, "Все главы")
             menu?.add(Menu.NONE, 2, 0, "Добавить в избранное")
@@ -108,7 +109,6 @@ class HBrowserAdapter(private var mangaItems: ArrayList<MangaItem> = ArrayList()
         val covers: ImageView = itemView.cover
 
         init {
-            itemView.tag = this
             itemView.setOnCreateContextMenuListener(this)
         }
     }

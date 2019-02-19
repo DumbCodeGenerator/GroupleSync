@@ -12,15 +12,17 @@ import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.SpacesItemDecoration
 import ru.krogon500.grouplesync.activity.HentaiBrowser
 import ru.krogon500.grouplesync.entity.HentaiManga
+import ru.krogon500.grouplesync.holder.ClickableViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 
 
-class HentaiBrowserChaptersAdapter(var hChapters: ArrayList<HentaiManga>) : ClickableRecyclerViewAdapter<HentaiBrowserChaptersAdapter.ViewHolder>() {
+class HentaiBrowserChaptersAdapter(var hChapters: ArrayList<HentaiManga>, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<HentaiBrowserChaptersAdapter.ViewHolder>() {
     val space = 30
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.hbrowser_elem, parent, false)
-        return ViewHolder(itemView, onItemClickListener)
+        return ViewHolder(itemView, listener)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -69,15 +71,11 @@ class HentaiBrowserChaptersAdapter(var hChapters: ArrayList<HentaiManga>) : Clic
         return hChapters[i].id
     }
 
-    class ViewHolder(itemView: View, listener: View.OnClickListener?): RecyclerView.ViewHolder(itemView){
+    class ViewHolder(itemView: View, listener: OnItemClickListener?): ClickableViewHolder(itemView, listener){
         val title: TextView = itemView.title
         val series: TextView = itemView.series
         val pluses: TextView = itemView.pluses
         val tags: TextView = itemView.tags
         val covers: ImageView = itemView.cover
-        init {
-            itemView.tag = this
-            itemView.setOnClickListener(listener)
-        }
     }
 }

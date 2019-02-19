@@ -1,18 +1,19 @@
 package ru.krogon500.grouplesync.adapter
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
 import io.objectbox.Box
 import io.objectbox.kotlin.query
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.entity.GroupleBookmark
 import ru.krogon500.grouplesync.holder.MangaCellsViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import java.text.Collator
 import java.util.*
 
-class GroupleAdapter(private val ctx: Context, private var groupleBookmarksBox: Box<GroupleBookmark>) : ClickableRecyclerViewAdapter<MangaCellsViewHolder>() {
+class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, private var listener: OnItemClickListener?) : RecyclerView.Adapter<MangaCellsViewHolder>() {
 
     private lateinit var groupleBookmarks: ArrayList<GroupleBookmark>
 
@@ -23,7 +24,7 @@ class GroupleAdapter(private val ctx: Context, private var groupleBookmarksBox: 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MangaCellsViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.cellgrid, parent, false)
-        return MangaCellsViewHolder(itemView, onItemClickListener)
+        return MangaCellsViewHolder(itemView, listener)
     }
 
     override fun getItemCount(): Int {

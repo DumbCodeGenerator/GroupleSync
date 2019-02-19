@@ -11,9 +11,10 @@ import androidx.recyclerview.widget.RecyclerView
 import ru.krogon500.grouplesync.SpacesItemDecoration
 import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.holder.ClickableViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 
 
-class SimpleArrayAdapter(private var titles: MutableList<String>, private var listener: View.OnClickListener?): RecyclerView.Adapter<SimpleArrayAdapter.ViewHolder>() {
+class SimpleArrayAdapter(private var titles: MutableList<String>, private var listener: OnItemClickListener? = null): RecyclerView.Adapter<SimpleArrayAdapter.ViewHolder>() {
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
@@ -42,10 +43,9 @@ class SimpleArrayAdapter(private var titles: MutableList<String>, private var li
         holder.textView.text = titles[position]
     }
 
-    class ViewHolder(itemView: View, listener: View.OnClickListener?, context: Context) : ClickableViewHolder(itemView, listener){
+    class ViewHolder(itemView: View, listener: OnItemClickListener?, context: Context) : ClickableViewHolder(itemView, listener){
         val textView: TextView = itemView.findViewById(android.R.id.text1)
         init {
-            itemView.tag = this
             val outValue = TypedValue()
             context.theme.resolveAttribute(android.R.attr.selectableItemBackground, outValue, true)
             itemView.setBackgroundResource(outValue.resourceId)

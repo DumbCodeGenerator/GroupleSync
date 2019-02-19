@@ -7,6 +7,7 @@ import android.util.SparseArray
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
 import io.objectbox.Box
 import io.objectbox.kotlin.query
 import org.greenrobot.eventbus.EventBus
@@ -21,12 +22,13 @@ import ru.krogon500.grouplesync.event.DownloadEvent
 import ru.krogon500.grouplesync.event.UpdateEvent
 import ru.krogon500.grouplesync.fragment.HentaiFragment
 import ru.krogon500.grouplesync.holder.MangaCellsViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.service.DownloadService
 import se.ajgarn.mpeventbus.MPEventBus
 import java.io.File
 import java.util.*
 
-class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Box<HentaiManga>) : ClickableRecyclerViewAdapter<MangaCellsViewHolder>() {
+class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Box<HentaiManga>, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<MangaCellsViewHolder>() {
     
     private lateinit var hentaiManga: ArrayList<HentaiManga>
     private val progresses = SparseArray<CustomArray>()
@@ -42,7 +44,7 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MangaCellsViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.cellgrid, parent, false)
-        return MangaCellsViewHolder(itemView, onItemClickListener)
+        return MangaCellsViewHolder(itemView, listener)
     }
 
     fun Box<HentaiManga>.init(){

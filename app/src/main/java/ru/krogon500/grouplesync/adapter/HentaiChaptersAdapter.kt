@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.HorizontalScrollView
+import androidx.recyclerview.widget.RecyclerView
 import io.objectbox.relation.ToMany
 import kotlinx.android.synthetic.main.manga_chapters.*
 import ru.krogon500.grouplesync.R
@@ -20,18 +21,19 @@ import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.hentaiBox
 import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mPass
 import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mUser
 import ru.krogon500.grouplesync.holder.ChaptersViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.service.DownloadService
 import se.ajgarn.mpeventbus.MPEventBus
 
 
-class HentaiChaptersAdapter(private val mContext: Context, private val origin_manga: HentaiManga) : ClickableRecyclerViewAdapter<ChaptersViewHolder>() {
+class HentaiChaptersAdapter(private val mContext: Context, private val origin_manga: HentaiManga, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<ChaptersViewHolder>() {
     var hChapters: ToMany<HentaiManga> = origin_manga.relateds
     val checkedItems: LinkedHashMap<Int, Boolean> = LinkedHashMap()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChaptersViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.chapter_item, parent, false)
-        return ChaptersViewHolder(itemView, onItemClickListener)
+        return ChaptersViewHolder(itemView, listener)
     }
 
     override fun onBindViewHolder(holder: ChaptersViewHolder, position: Int) {

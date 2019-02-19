@@ -34,8 +34,8 @@ import ru.krogon500.grouplesync.activity.ImageActivity
 import ru.krogon500.grouplesync.adapter.HentaiAdapter
 import ru.krogon500.grouplesync.entity.HentaiManga
 import ru.krogon500.grouplesync.entity.HentaiManga_
-import ru.krogon500.grouplesync.holder.MangaCellsViewHolder
 import ru.krogon500.grouplesync.image_loaders.HentaiImageLoader
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.*
@@ -284,39 +284,39 @@ class HentaiFragment : Fragment() {
             fragment!!.mHentaiTask = null
 
             if (aBoolean) {
-                val listener = View.OnClickListener {
-                    val viewHolder = it.tag as? MangaCellsViewHolder ?: return@OnClickListener
-                    val adapter = fragment?.mangaCells?.adapter as? HentaiAdapter ?: return@OnClickListener
-                    val position = viewHolder.adapterPosition
-                    val item = adapter.getItem(position)
+                val listener = object : OnItemClickListener {
+                    override fun onItemClick(view: View, position: Int) {
+                        val adapter = fragment?.mangaCells?.adapter as? HentaiAdapter ?: return
+                        val item = adapter.getItem(position)
 
-                    if (item.hasChapters) {
-                        val intent = Intent(fragment!!.activity, HentaiChapters::class.java)
-                        intent.putExtra("id", item.id)
-                        intent.putExtra("link", item.link.replace("/online/", "/related/"))
-                        intent.putExtra("user", HentaiFragment.mUser)
-                        intent.putExtra("pass", HentaiFragment.mPass)
-                        fragment!!.startActivity(intent)
-                    } else {
-                        val intent = Intent(fragment!!.activity, ImageActivity::class.java)
-                        intent.putExtra("type", Utils.HENTAI)
-                        intent.putExtra("title", item.title)
-                        if (item.saved) {
+                        if (item.hasChapters) {
+                            val intent = Intent(fragment!!.activity, HentaiChapters::class.java)
                             intent.putExtra("id", item.id)
-                            intent.putExtra("online", false)
-                        } else {
-                            intent.putExtra("link", item.link)
-                            intent.putExtra("online", true)
+                            intent.putExtra("link", item.link.replace("/online/", "/related/"))
                             intent.putExtra("user", HentaiFragment.mUser)
                             intent.putExtra("pass", HentaiFragment.mPass)
+                            fragment!!.startActivity(intent)
+                        } else {
+                            val intent = Intent(fragment!!.activity, ImageActivity::class.java)
+                            intent.putExtra("type", Utils.HENTAI)
+                            intent.putExtra("title", item.title)
+                            if (item.saved) {
+                                intent.putExtra("id", item.id)
+                                intent.putExtra("online", false)
+                            } else {
+                                intent.putExtra("link", item.link)
+                                intent.putExtra("online", true)
+                                intent.putExtra("user", HentaiFragment.mUser)
+                                intent.putExtra("pass", HentaiFragment.mPass)
+                            }
+                            fragment!!.startActivity(intent)
                         }
-                        fragment!!.startActivity(intent)
                     }
                 }
 
                 val adapter = fragment!!.mangaCells!!.adapter as? HentaiAdapter
                 if(adapter == null)
-                    fragment?.mangaCells?.adapter = HentaiAdapter(fragment?.activity ?: return, hentaiBox).also { it.setItemClickListener(listener) }
+                    fragment?.mangaCells?.adapter = HentaiAdapter(fragment?.activity ?: return, hentaiBox, listener)
                 else
                     adapter.update(hentaiBox)
             }

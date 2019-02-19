@@ -7,8 +7,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.github.lzyzsd.circleprogress.DonutProgress
 import kotlinx.android.synthetic.main.chapter_item.view.*
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 
-class ChaptersViewHolder(itemView: View, listener: View.OnClickListener?) : ClickableViewHolder(itemView, listener), View.OnLongClickListener {
+class ChaptersViewHolder(itemView: View, listener: OnItemClickListener?) : ClickableViewHolder(itemView, listener), View.OnLongClickListener {
 
     override fun onLongClick(v: View?): Boolean {
         selected.isChecked = !selected.isChecked
@@ -23,7 +24,6 @@ class ChaptersViewHolder(itemView: View, listener: View.OnClickListener?) : Clic
     val saved: ImageView = itemView.saved
 
     init {
-        itemView.tag = this
         itemView.setOnLongClickListener(this)
     }
 }

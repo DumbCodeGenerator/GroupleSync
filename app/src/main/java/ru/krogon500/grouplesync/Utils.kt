@@ -131,6 +131,15 @@ object Utils {
         }
     }
 
+    private fun writeRequest(message: String, request: Boolean){
+        val dir = File("$cachePath/requests")
+        if(!dir.exists())
+            dir.mkdirs()
+
+        val filename = "request $request" + DateFormat.getDateTimeInstance().format(Date()) + ".txt"
+        File(dir, filename).writeText(message)
+    }
+
     @Throws(Exception::class)
     fun makeRequest(type: Byte?, user: String, pass: String, targetUri: String, data: HashMap<String, String>, method: Method): Boolean {
         val u = URL(targetUri)
@@ -152,6 +161,8 @@ object Utils {
                     allCookies[host] = result.cookies()
                     val result2 = Jsoup.connect(targetUri).method(method).cookies(result.cookies()).data(data).execute()
                     val resultString = result2.parse().toString()
+                    Log.d("lol", "request true ($resultString)")
+                    writeRequest(resultString, true)
                     return resultString.contains("success") || resultString.contains("ok")
                 }
             } else if (type == HENTAI) {
@@ -172,11 +183,13 @@ object Utils {
             val result1String = result1.parse().html()
 
             return if (!result1String.contains("success") && !result1String.contains("ok") || result1String.contains("Внимание, обнаружена ошибка")) {
-                Log.d("lol", "false")
+                Log.d("lol", "request false ($result1String)")
+                writeRequest(result1String, false)
                 allCookies.remove(host)
                 makeRequest(type, user, pass, targetUri, data, method)
             } else {
-                Log.d("lol", "true")
+                Log.d("lol", "request true ($result1String)")
+                writeRequest(result1String, true)
                 true
             }
         }
@@ -358,6 +371,11 @@ object Utils {
         val layoutParams = this.layoutParams as CoordinatorLayout.LayoutParams
         val fab_bottomMargin = layoutParams.bottomMargin
         this.animate().translationY((this.height + fab_bottomMargin).toFloat()).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(150).start()
+    }
+
+    fun View?.showView(listener: AnimatorListenerAdapter? = null){
+        this ?: return
+        this.animate().translationY(0f).setInterpolator(LinearInterpolator()).setDuration(150).setListener(listener).start()
     }
 
     fun toggleKeyboard(context: Context?) {

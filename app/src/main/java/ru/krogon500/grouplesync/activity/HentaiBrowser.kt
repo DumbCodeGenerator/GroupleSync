@@ -13,7 +13,6 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
@@ -29,11 +28,12 @@ import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.Utils.getHQThumbnail
 import ru.krogon500.grouplesync.Utils.hideView
+import ru.krogon500.grouplesync.Utils.showView
 import ru.krogon500.grouplesync.adapter.HBrowserAdapter
 import ru.krogon500.grouplesync.adapter.SimpleArrayAdapter
 import ru.krogon500.grouplesync.fragment.HentaiFragment
-import ru.krogon500.grouplesync.holder.ClickableViewHolder
 import ru.krogon500.grouplesync.image_loaders.HentaiBrowserImageLoader
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.items.MangaItem
 import java.util.*
 import java.util.regex.Pattern
@@ -55,11 +55,9 @@ class HentaiBrowser : AppCompatActivity() {
     private var searchView: SearchView? = null
     private var seriesViewPos: Int = 0
 
-    private val simpleListener = View.OnClickListener { v ->
-        val viewHolder = v.tag as ClickableViewHolder
-        if(viewHolder is SimpleArrayAdapter.ViewHolder) {
-            val adapter = browseList.adapter as? SimpleArrayAdapter ?: return@OnClickListener
-            val position = viewHolder.adapterPosition
+    private val simpleListener = object : OnItemClickListener {
+        override fun onItemClick(view: View, position: Int) {
+            val adapter = browseList.adapter as? SimpleArrayAdapter ?: return
             if (searchView != null)
                 searchView!!.clearFocus()
             seriesViewPos = layoutManager.findFirstCompletelyVisibleItemPosition()
@@ -67,12 +65,17 @@ class HentaiBrowser : AppCompatActivity() {
             val key = adapter.getItem(position)
             if (seriesLinks.containsKey(key)) {
                 curPage = 0
-                hTask = HentaiBrowse(HentaiBrowser.mUser, HentaiBrowser.mPass, seriesLinks[key]!!, firstPage = true, series = true)
+                hTask = HentaiBrowse(mUser, mPass, seriesLinks[key]!!, firstPage = true, series = true)
                 hTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+                browseList.adapter = null
+                browser_fab.hideView()
             }
-        }else if(viewHolder is HBrowserAdapter.ItemViewHolder){
-            val adapter = browseList.adapter as? HBrowserAdapter ?: return@OnClickListener
-            val position = viewHolder.adapterPosition
+        }
+    }
+
+    private val browserListener = object : OnItemClickListener{
+        override fun onItemClick(view: View, position: Int) {
+            val adapter = browseList.adapter as? HBrowserAdapter ?: return
             val mangaItem = adapter.getItem(position)
             val intent = Intent(applicationContext, ImageActivity::class.java)
             intent.putExtra("type", Utils.HENTAI)
@@ -84,6 +87,7 @@ class HentaiBrowser : AppCompatActivity() {
             startActivity(intent)
         }
     }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -157,7 +161,7 @@ class HentaiBrowser : AppCompatActivity() {
                 if(firstVisibleItem == 0 && browser_fab.translationY == 0f && !isAnimated){
                     browser_fab.hideView(listener)
                 }else if(firstVisibleItem > 0 && browser_fab.translationY > 0 && !isAnimated){
-                    browser_fab.animate().translationY(0f).setInterpolator(LinearInterpolator()).setDuration(150).setListener(listener).start()
+                    browser_fab.showView(listener)
                 }
 
                 if (layoutManager.itemCount == 0 || pages.size == 0 || pages.size <= curPage || browseList.adapter !is HBrowserAdapter)
@@ -195,7 +199,7 @@ class HentaiBrowser : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if(seriesLinks.size > 0){
+        if(seriesLinks.size > 0 && !browseRefresh.isRefreshing){
             appBar.setExpanded(true, false)
             if(browseList.adapter is SimpleArrayAdapter) {
                 browser_fab.hideView()
@@ -206,16 +210,36 @@ class HentaiBrowser : AppCompatActivity() {
                 }
                 browseRefresh.isRefreshing = true
                 browseList.visibility = View.GONE
-                /*if(browseList.footerViewsCount == 0)
-                browseList!!.addFooterView(progressBar)*/
-                //browseList.adapter = HBrowserAdapter()
+
                 hTask = HentaiBrowse(mUser, mPass, Utils.hentaiBase + "/manga/", true)
                 hTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
             }else{
                 browseList.adapter = SimpleArrayAdapter(seriesLinks.keys.toMutableList(), simpleListener)
                 browseList.scrollToPosition(seriesViewPos)
+
                 if(seriesViewPos == 0)
                     browser_fab.hideView()
+                else
+                    browser_fab.showView()
+            }
+        }else if(seriesLinks.size > 0 && browseRefresh.isRefreshing){
+            if (hTask != null) {
+                hTask!!.cancel(true)
+                hTask = null
+                browseRefresh.isRefreshing = false
+                browseList.adapter = SimpleArrayAdapter(seriesLinks.keys.toMutableList(), simpleListener)
+                browseList.scrollToPosition(seriesViewPos)
+
+                if(seriesViewPos == 0)
+                    browser_fab.hideView()
+                else
+                    browser_fab.showView()
+            }
+        }else if(browseRefresh.isRefreshing){
+            if (hTask != null) {
+                hTask!!.cancel(true)
+                hTask = null
+                browseRefresh.isRefreshing = false
             }
         }else
             super.onBackPressed()
@@ -491,18 +515,17 @@ class HentaiBrowser : AppCompatActivity() {
                     browseList!!.visibility = View.VISIBLE
 
                 if(browseList.adapter == null) {
-                    val adapter = HBrowserAdapter(mangaItems = mangaItems, addFooter = pages.size > 0 && pages.size > curPage)
-                    adapter.setItemClickListener(simpleListener)
+                    val adapter = HBrowserAdapter(mangaItems = mangaItems, addFooter = pages.size > 0 && pages.size > curPage, listener = browserListener)
                     browseList.adapter = adapter
                     visPos = 0
                 }else{
                     val adapter = browseList.adapter
                     if(adapter is HBrowserAdapter) {
                         adapter.addFooter = pages.size > 0 && pages.size > curPage
-                        adapter.setItemClickListener(simpleListener)
+                        //adapter.listener = browserListener
                         adapter.update(mangaItems, true)
                     }else{
-                        browseList.adapter = HBrowserAdapter(mangaItems = mangaItems, addFooter = pages.size > 0 && pages.size > curPage).also { it.setItemClickListener(simpleListener) }
+                        browseList.adapter = HBrowserAdapter(mangaItems = mangaItems, addFooter = pages.size > 0 && pages.size > curPage, listener = browserListener)
                         visPos = 0
                     }
                 }

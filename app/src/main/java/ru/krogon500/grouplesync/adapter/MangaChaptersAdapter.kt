@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
 import io.objectbox.Box
 import io.objectbox.relation.ToMany
 import kotlinx.android.synthetic.main.manga_chapters.*
@@ -18,20 +19,22 @@ import ru.krogon500.grouplesync.Utils.isMyServiceRunning
 import ru.krogon500.grouplesync.entity.GroupleChapter
 import ru.krogon500.grouplesync.event.DownloadEvent
 import ru.krogon500.grouplesync.holder.ChaptersViewHolder
+import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.service.DownloadService
 import se.ajgarn.mpeventbus.MPEventBus
 
 
 class MangaChaptersAdapter(private val mContext: Context,
                            var gChapters: ToMany<GroupleChapter>,
-                           var gChaptersBox: Box<GroupleChapter>) : ClickableRecyclerViewAdapter<ChaptersViewHolder>() {
+                           var gChaptersBox: Box<GroupleChapter>,
+                           private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<ChaptersViewHolder>() {
     val checkedItems: LinkedHashMap<Int, Boolean> = LinkedHashMap()
     var reversed: Boolean = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChaptersViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.chapter_item, parent, false)
-        return ChaptersViewHolder(itemView, onItemClickListener)
+        return ChaptersViewHolder(itemView, listener)
     }
 
     override fun onBindViewHolder(holder: ChaptersViewHolder, position: Int) {
