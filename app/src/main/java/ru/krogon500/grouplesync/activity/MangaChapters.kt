@@ -196,7 +196,7 @@ class MangaChapters : AppCompatActivity() {
         gChapters = GroupleFragment.groupleBookmarksBox[bookmark_id].chapters
         val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
         adapter.update(gChapters)
-        chaptersList.scrollToPosition(if(adapter.reversed) Math.max(visPos, adapter.getLastReaded()) else Math.min(visPos, adapter.getLastReaded()))
+        layoutManager.scrollToPositionWithOffset(if(adapter.reversed) Math.max(visPos, adapter.getLastReaded()) else Math.min(visPos, adapter.getLastReaded()), chaptersList.height/2)
     }
 
     fun onSelectAllClicked() {
