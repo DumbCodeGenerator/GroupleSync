@@ -56,6 +56,62 @@ class MangaChapters : AppCompatActivity() {
     private var bookmark_id: Long = 0
     lateinit var layoutManager: LinearLayoutManager
 
+    val listener = object : RecyclerView.OnScrollListener() {
+        var isAnimated = false
+        val duration = 150L
+        val listener = object: AnimatorListenerAdapter(){
+            override fun onAnimationStart(animation: Animator?) {
+                isAnimated = true
+            }
+            override fun onAnimationEnd(animation: Animator?) {
+                isAnimated = false
+            }
+        }
+
+        val countDownTimer = object: CountDownTimer(2000, 1000){
+            override fun onFinish() {
+                if(fab.translationY == 0f && !isAnimated){
+                    val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
+                    val fab_bottomMargin = layoutParams.bottomMargin
+                    fab.animate().translationY((fab.height + fab_bottomMargin).toFloat()).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
+                }
+            }
+
+            override fun onTick(millisUntilFinished: Long) {
+            }
+
+        }
+
+        init{
+            countDownTimer.start()
+        }
+
+        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+            val scrollAdapter = recyclerView.adapter as? MangaChaptersAdapter ?: return
+            val firstVisibleItem = layoutManager.findFirstCompletelyVisibleItemPosition()
+            val last = layoutManager.findLastVisibleItemPosition()
+            val readed = scrollAdapter.getLastReaded()
+
+            if(readed in firstVisibleItem..last && fab.translationY == 0f && !isAnimated){
+                val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
+                val fab_bottomMargin = layoutParams.bottomMargin
+                fab.animate().translationY((fab.height + fab_bottomMargin).toFloat()).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
+            }else if(readed !in firstVisibleItem..last && fab.translationY > 0 && !isAnimated){
+                fab.setImageDrawable(ContextCompat.getDrawable(applicationContext, if(readed > firstVisibleItem) R.drawable.arrow_down else R.drawable.arrow_up))
+
+                fab.animate().translationY(0f).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
+            }
+        }
+
+        override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+            if(newState == RecyclerView.SCROLL_STATE_IDLE){
+                countDownTimer.start()
+            }else{
+                countDownTimer.cancel()
+            }
+        }
+    }
+
     private var visPos: Int = 0
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
@@ -146,6 +202,7 @@ class MangaChapters : AppCompatActivity() {
         layoutManager = LinearLayoutManager(this)
         chaptersList.layoutManager = layoutManager
         chaptersList.addItemDecoration(Utils.dividerItemDecor(this, Color.WHITE))
+        chaptersList.addOnScrollListener(listener)
 
         fab.setOnClickListener {
             val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return@setOnClickListener
@@ -479,61 +536,6 @@ class MangaChapters : AppCompatActivity() {
                 selectUnread.setOnClickListener { onSelectUnreadClicked() }
                 makeReaded.setOnClickListener { onMakeReadedClicked() }
 
-                chaptersList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                    var isAnimated = false
-                    val duration = 150L
-                    val listener = object: AnimatorListenerAdapter(){
-                        override fun onAnimationStart(animation: Animator?) {
-                            isAnimated = true
-                        }
-                        override fun onAnimationEnd(animation: Animator?) {
-                            isAnimated = false
-                        }
-                    }
-
-                    val countDownTimer = object: CountDownTimer(2000, 1000){
-                        override fun onFinish() {
-                            if(fab.translationY == 0f && !isAnimated){
-                                val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
-                                val fab_bottomMargin = layoutParams.bottomMargin
-                                fab.animate().translationY((fab.height + fab_bottomMargin).toFloat()).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
-                            }
-                        }
-
-                        override fun onTick(millisUntilFinished: Long) {
-                        }
-
-                    }
-
-                    init{
-                        countDownTimer.start()
-                    }
-
-                    override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                        val scrollAdapter = recyclerView.adapter as? MangaChaptersAdapter ?: return
-                        val firstVisibleItem = layoutManager.findFirstCompletelyVisibleItemPosition()
-                        val last = layoutManager.findLastVisibleItemPosition()
-                        val readed = scrollAdapter.getLastReaded()
-
-                        if(readed in firstVisibleItem..last && fab.translationY == 0f && !isAnimated){
-                            val layoutParams = fab.layoutParams as CoordinatorLayout.LayoutParams
-                            val fab_bottomMargin = layoutParams.bottomMargin
-                            fab.animate().translationY((fab.height + fab_bottomMargin).toFloat()).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
-                        }else if(readed !in firstVisibleItem..last && fab.translationY > 0 && !isAnimated){
-                            fab.setImageDrawable(ContextCompat.getDrawable(applicationContext, if(readed > firstVisibleItem) R.drawable.arrow_down else R.drawable.arrow_up))
-
-                            fab.animate().translationY(0f).setInterpolator(LinearInterpolator()).setListener(listener).setDuration(duration).start()
-                        }
-                    }
-
-                    override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                        if(newState == RecyclerView.SCROLL_STATE_IDLE){
-                            countDownTimer.start()
-                        }else{
-                            countDownTimer.cancel()
-                        }
-                    }
-                })
                 if (!EventBus.getDefault().isRegistered(this@MangaChapters))
                     EventBus.getDefault().register(this@MangaChapters)
             }
