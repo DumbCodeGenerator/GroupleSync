@@ -7,18 +7,42 @@ import androidx.recyclerview.widget.RecyclerView
 import io.objectbox.Box
 import io.objectbox.kotlin.query
 import ru.krogon500.grouplesync.R
+import ru.krogon500.grouplesync.RecyclerArray
 import ru.krogon500.grouplesync.entity.GroupleBookmark
+import ru.krogon500.grouplesync.fragment.GroupleFragment
 import ru.krogon500.grouplesync.holder.MangaCellsViewHolder
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import java.text.Collator
-import java.util.*
 
 class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, private var listener: OnItemClickListener?) : RecyclerView.Adapter<MangaCellsViewHolder>() {
 
-    private lateinit var groupleBookmarks: ArrayList<GroupleBookmark>
+    private var groupleBookmarks = RecyclerArray<GroupleBookmark>(this, GroupleFragment.imageLoader)
 
     init {
         groupleBookmarksBox.init()
+    }
+
+    fun Box<GroupleBookmark>.init(){
+        val newBookmarks = this.query { sort { o1, o2 ->
+            val ruCollator = Collator.getInstance(java.util.Locale("ru", "RU"))
+            ruCollator.strength = Collator.PRIMARY
+            ruCollator.compare(o1.title, o2.title) } }.find()
+        if(groupleBookmarks.isEmpty()) {
+            groupleBookmarks.addAll(newBookmarks)
+        }else{
+            val ids = ArrayList<Long>()
+
+            if(groupleBookmarks.size < newBookmarks.size){
+                groupleBookmarks.forEach { ids.add(it.id) }
+                newBookmarks.forEachIndexed { index, groupleBookmark ->
+                    if(groupleBookmark.id !in ids)
+                        groupleBookmarks.add(index, groupleBookmark)
+                }
+            }else{
+                newBookmarks.forEach { ids.add(it.id) }
+                groupleBookmarks.removeAll(groupleBookmarks.filter { it.id !in ids })
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MangaCellsViewHolder {
@@ -28,7 +52,7 @@ class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, priv
     }
 
     override fun getItemCount(): Int {
-        return groupleBookmarksBox.count().toInt()
+        return groupleBookmarks.size
     }
 
     override fun onBindViewHolder(holder: MangaCellsViewHolder, position: Int) {
@@ -50,18 +74,6 @@ class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, priv
             holder.newSign.visibility = View.GONE
     }
 
-
-    fun Box<GroupleBookmark>.init(){
-        groupleBookmarks = this.query { sort { o1, o2 ->
-            val ruCollator = Collator.getInstance(java.util.Locale("ru", "RU"))
-            ruCollator.strength = Collator.PRIMARY
-            ruCollator.compare(o1.title, o2.title) } }.find() as ArrayList<GroupleBookmark>
-
-        groupleBookmarks.forEach {
-            if(it.cover == null)
-                it.setCover(this@GroupleAdapter)
-        }
-    }
 
     fun remove(pos: Int) {
         groupleBookmarksBox.remove(groupleBookmarks[pos])

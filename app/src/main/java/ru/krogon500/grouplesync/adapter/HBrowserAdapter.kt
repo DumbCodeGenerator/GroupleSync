@@ -7,19 +7,21 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.hbrowser_elem.view.*
 import ru.krogon500.grouplesync.R
+import ru.krogon500.grouplesync.RecyclerArray
 import ru.krogon500.grouplesync.SpacesItemDecoration
+import ru.krogon500.grouplesync.activity.HentaiBrowser
 import ru.krogon500.grouplesync.holder.ClickableViewHolder
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.items.MangaItem
 
-class HBrowserAdapter(private var mangaItems: ArrayList<MangaItem> = ArrayList(), var addFooter: Boolean = false, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class HBrowserAdapter(data: MutableList<MangaItem>, var addFooter: Boolean = false, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private val mangaItems: RecyclerArray<MangaItem> = RecyclerArray(this, HentaiBrowser.imageLoader)
     val FOOTER_VIEW = 1
     val space = 30
     var selectedItem: Int? = null
 
     init {
-        if(mangaItems.size > 0)
-            mangaItems.forEach { it.setCover(this) }
+        mangaItems.addAll(data)
     }
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
@@ -45,14 +47,10 @@ class HBrowserAdapter(private var mangaItems: ArrayList<MangaItem> = ArrayList()
         }
     }
 
-    fun update(mangaItems: ArrayList<MangaItem>, append: Boolean) {
-        mangaItems.forEach { it.setCover(this) }
-        if (append) {
-            this.mangaItems.addAll(mangaItems)
-        } else {
-            this.mangaItems = mangaItems
-        }
-        notifyDataSetChanged()
+    fun update(data: MutableList<MangaItem>, append: Boolean) {
+        //data.forEach { it.setCover(this) }
+        if (append) mangaItems.addAll(data) else mangaItems.swap(data)
+        //notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int {

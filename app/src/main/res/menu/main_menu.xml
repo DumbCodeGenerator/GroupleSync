@@ -10,34 +10,34 @@
     <item
         android:id="@+id/hBrowser"
         android:icon = "@android:drawable/ic_menu_view"
-        android:title="Hentaichan браузер"
-        myApp:showAsAction="always|collapseActionView"
+        android:title="@string/hentaichan_brow"
+        myApp:showAsAction="ifRoom|collapseActionView"
         />
     <item
         android:id="@+id/a_z"
         android:icon = "@android:drawable/ic_menu_sort_alphabetically"
-        android:title="Сортировать в обратном порядке"
-        myApp:showAsAction="always|collapseActionView"
+        android:title="@string/sort_reverse"
+        myApp:showAsAction="ifRoom|collapseActionView"
         android:visible="false"
         />
     <item
         android:id="@+id/sync"
         android:icon="@android:drawable/stat_notify_sync_noanim"
-        android:title="Синхронизация"
+        android:title="@string/sync"
         myApp:showAsAction="never" />
     <item
         android:id="@+id/update"
         android:icon="@android:drawable/stat_notify_sync_noanim"
         android:visible="false"
-        android:title="Проверка новых глав"
-        myApp:showAsAction="always|collapseActionView" />
+        android:title="@string/check_new"
+        myApp:showAsAction="ifRoom|collapseActionView" />
     <item
         android:id="@+id/logout"
-        android:title="Выйти"
+        android:title="@string/logout"
         myApp:showAsAction="never" />
     <item
         android:id="@+id/clear_table"
-        android:title="Очистить таблицу"
+        android:title="@string/clear_table"
         android:visible="false"
         myApp:showAsAction="never" />
 

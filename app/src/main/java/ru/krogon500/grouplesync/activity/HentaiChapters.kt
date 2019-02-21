@@ -6,12 +6,13 @@ import android.graphics.Color
 import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import io.objectbox.relation.ToMany
 import kotlinx.android.synthetic.main.chapter_item.view.*
 import kotlinx.android.synthetic.main.manga_chapters.*
@@ -44,7 +45,7 @@ class HentaiChapters : AppCompatActivity() {
         if (event.type != Utils.HENTAI || event.original_id != manga_id)
             return
         val view = chaptersList.findViewHolderForAdapterPosition(event.position)?.itemView ?: return
-        val adapter = chaptersList.adapter as HentaiChaptersAdapter
+        val adapter = chaptersList.adapter as? HentaiChaptersAdapter ?: return
         val loading = view.chapterLoading
         val saved = view.saved
         if (saved != null)
@@ -78,11 +79,29 @@ class HentaiChapters : AppCompatActivity() {
         fromBrowser = savedInstanceState.getBoolean("fromBrowser")
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        menu.removeItem(R.id.hBrowser)
+        menu.removeItem(R.id.logout)
+        menu.removeItem(R.id.a_z)
+        menu.removeItem(R.id.sync)
+        menu.findItem(R.id.clear_table).isVisible = true
+        return super.onCreateOptionsMenu(menu)
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             // Respond to the action bar's Up/Home button
             android.R.id.home -> {
                 onBackPressed()
+                return true
+            }
+            R.id.clear_table -> {
+                hChapters?.clear() ?: return false
+                hChapters?.applyChangesToDb()
+                val adapter = chaptersList.adapter as? HentaiChaptersAdapter ?: return false
+                adapter.notifyDataSetChanged()
+                Toast.makeText(applicationContext, "База очищена", Toast.LENGTH_SHORT).show()
                 return true
             }
         }
@@ -97,6 +116,9 @@ class HentaiChapters : AppCompatActivity() {
 
         if (supportActionBar != null)
             supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+
+        if (!EventBus.getDefault().isRegistered(this@HentaiChapters))
+            EventBus.getDefault().register(this@HentaiChapters)
 
         layoutManager = LinearLayoutManager(this)
         chaptersList.layoutManager = layoutManager
@@ -328,21 +350,20 @@ class HentaiChapters : AppCompatActivity() {
             chaptersRefresh!!.isRefreshing = false
             chaptersList.visibility = View.VISIBLE
             if (success) {
-                val adapter: RecyclerView.Adapter<*>
-                if(!fromBrowser){
-                    adapter = HentaiChaptersAdapter(this@HentaiChapters, originalHentai!!, onChapterClickListener)
-                } else {
-                    adapter = HentaiBrowserChaptersAdapter(chapterItems, onBrowserClickListener)
+                var adapter = chaptersList.adapter
+                if(adapter == null) {
+                    adapter = if(!fromBrowser) HentaiChaptersAdapter(this@HentaiChapters, originalHentai!!, onChapterClickListener)
+                    else HentaiBrowserChaptersAdapter(chapterItems, onBrowserClickListener)
+
+                    chaptersList.adapter = adapter
+                    chaptersList.scrollToPosition(visPos)
+                }else{
+                    if(!fromBrowser) (adapter as HentaiChaptersAdapter).update(hChapters ?: return) else (adapter as HentaiBrowserChaptersAdapter).update(chapterItems)
                 }
-                chaptersList.adapter = adapter
-                chaptersList.scrollToPosition(visPos)
 
                 selectAll.setOnClickListener { onSelectAllClicked() }
                 downloadSelected.setOnClickListener { onDownloadSelectedClicked() }
                 deleteSelected.setOnClickListener { onDeleteSelectedClicked() }
-
-                if (!EventBus.getDefault().isRegistered(this@HentaiChapters))
-                    EventBus.getDefault().register(this@HentaiChapters)
             }
         }
 

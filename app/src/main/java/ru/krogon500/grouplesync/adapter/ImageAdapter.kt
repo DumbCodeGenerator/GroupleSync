@@ -15,7 +15,6 @@ import android.util.SparseArray
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RelativeLayout
 import androidx.viewpager.widget.PagerAdapter
 import com.davemorrissey.labs.subscaleview.ImageViewState
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
@@ -27,6 +26,7 @@ import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
 import io.objectbox.relation.ToMany
+import kotlinx.android.synthetic.main.image_activity.*
 import kotlinx.android.synthetic.main.image_fragment.view.*
 import org.jsoup.Jsoup
 import ru.krogon500.grouplesync.App
@@ -281,19 +281,19 @@ class ImageAdapter : PagerAdapter {
     }
 
     private fun imageClick(mContext: Context) {
-        val rl = (mContext as Activity).findViewById<RelativeLayout>(R.id.rl)
+        val appBar = (mContext as Activity).appBar
         if (!opened) {
-            rl.animate().alpha(1.0f).setListener(object : AnimatorListenerAdapter() {
+            appBar.animate().alpha(1.0f).setListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationStart(animation: Animator?) {
-                    rl.visibility = View.VISIBLE
+                    appBar.visibility = View.VISIBLE
                 }
             }).duration = 100
             uiHelper.show()
             opened = true
         } else {
-            rl.animate().alpha(0.0f).setListener(object : AnimatorListenerAdapter() {
+            appBar.animate().alpha(0.0f).setListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator?) {
-                    rl.visibility = View.GONE
+                    appBar.visibility = View.GONE
                 }
             }).duration = 100
             uiHelper.hide()

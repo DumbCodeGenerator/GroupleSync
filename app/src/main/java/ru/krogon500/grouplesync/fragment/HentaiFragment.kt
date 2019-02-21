@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.SimpleItemAnimator
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiskCache
 import com.nostra13.universalimageloader.core.DisplayImageOptions
@@ -45,13 +46,9 @@ import java.util.regex.Pattern
 class HentaiFragment : Fragment() {
     
     private var mHentaiTask: HentaiTask? = null
-    //private static ArrayList<Boolean> haveChapters;
-
-    //private Cursor cursor;
-
-    //private var hentaiBookmarks: DbHelper? = null
 
     private val refreshListener = SwipeRefreshLayout.OnRefreshListener {
+        imageLoader?.stop()
         mHentaiTask = HentaiTask(true, mUser, mPass, this@HentaiFragment)
         mHentaiTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?)
     }
@@ -78,9 +75,30 @@ class HentaiFragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
         hentaiBox = ((activity?.application ?: return) as App).boxStore.boxFor()
 
+        if (!imageLoader!!.isInited) {
+            val cacheDir = File("${Utils.cachePath}/hentai_covers")
+
+            if (!cacheDir.exists())
+                cacheDir.mkdirs()
+
+            val options = DisplayImageOptions.Builder()
+                    .cacheOnDisk(true)
+                    .bitmapConfig(Bitmap.Config.RGB_565)
+                    .build()
+            val config = ImageLoaderConfiguration.Builder(context)
+                    .defaultDisplayImageOptions(options)
+                    .memoryCacheExtraOptions(450, 400)
+                    .denyCacheImageMultipleSizesInMemory()
+                    .diskCache(UnlimitedDiskCache(cacheDir))
+                    .diskCacheExtraOptions(450, 400, null)
+                    .build()
+            imageLoader!!.init(config)
+        }
+
         mangaCells.addItemDecoration(SpacesItemDecoration(25, context))
         mangaCells.layoutManager = GridLayoutManager(context, Utils.calculateNoOfColumns(context))
         mangaCells.addOnScrollListener(Utils.fragmentFabListener(activity))
+        (mangaCells.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
 
         swipeRefresh.setColorSchemeColors(ContextCompat.getColor(context!!, R.color.colorAccent))
         swipeRefresh.isRefreshing = true
@@ -146,15 +164,7 @@ class HentaiFragment : Fragment() {
                 Toast.makeText(activity, "Удалено из избранного", Toast.LENGTH_SHORT).show()
                 val inCache = DiskCacheUtils.findInCache(coverLink, imageLoader!!.diskCache)
                 hentaiBox.remove(id.toLong())
-                /*try {
-                    hentaiBookmarks!!.deleteRow(DbHelper.HENTAIB_TABLE_NAME, DbHelper.ID, id)
-                } catch (e: Exception) {
-                    Log.e("GroupleSync", e.localizedMessage)
-                    Toast.makeText(activity, e.localizedMessage, Toast.LENGTH_SHORT).show()
-                    e.printStackTrace(Utils.getPrintWriter())
-                }*/
 
-                //Log.d("lol", "cover path: " + inCache.getAbsolutePath());
                 if (inCache.exists())
                     inCache.delete()
 
@@ -166,14 +176,10 @@ class HentaiFragment : Fragment() {
         }
     }
 
-    private class HentaiTask internal constructor(private val refresh: Boolean, private val mUser: String, private val mPass: String, context: HentaiFragment, private val APP_CACHE_PATH: String = Utils.cachePath, private val fragmentReference: WeakReference<HentaiFragment> = WeakReference(context)) : AsyncTask<Void, Void, Boolean>() {
-
-        //internal var pauseOnScroll: Boolean = false // or true
-        //internal var pauseOnFling = true // or false
+    private class HentaiTask internal constructor(private val refresh: Boolean, private val mUser: String, private val mPass: String, context: HentaiFragment, private val fragmentReference: WeakReference<HentaiFragment> = WeakReference(context)) : AsyncTask<Void, Void, Boolean>() {
         internal var fragment: HentaiFragment? = null
 
         private var skip: Boolean = false
-        private var cacheDir: File? = null
         internal var ids: ArrayList<Long> = ArrayList()
 
         override fun onPreExecute() {
@@ -182,29 +188,6 @@ class HentaiFragment : Fragment() {
                 cancel(true)
                 return
             }
-            cacheDir = File(APP_CACHE_PATH + File.separator + "hentai_covers")
-
-            if (!cacheDir!!.exists())
-                cacheDir!!.mkdirs()
-
-            if (!imageLoader!!.isInited) {
-
-                val options = DisplayImageOptions.Builder()
-                        .cacheOnDisk(true)
-                        .bitmapConfig(Bitmap.Config.RGB_565)
-                        .build()
-                val config = ImageLoaderConfiguration.Builder(fragment!!.activity!!)
-                        .defaultDisplayImageOptions(options)
-                        .memoryCacheExtraOptions(450, 400)
-                        .denyCacheImageMultipleSizesInMemory()
-                        .diskCache(UnlimitedDiskCache(cacheDir!!))
-                        .diskCacheExtraOptions(450, 400, null)
-                        .build()
-                imageLoader!!.init(config)
-            }
-
-            /*val listener = PauseOnScrollListener(imageLoader, pauseOnScroll, pauseOnFling)
-            fragment!!.mangaCells.setOnScrollListener(listener)*/
 
             if (!hentaiBox.isEmpty && !refresh)
                 skip = true
@@ -262,7 +245,6 @@ class HentaiFragment : Fragment() {
                         mangaItem.hasChapters = true
 
                     hentaiBox.put(mangaItem)
-                    //mangaItem.relateds.add(mangaItem)
                 }
                 hentaiBox.query { notIn(HentaiManga_.id, ids.toLongArray()) }.remove()
 
@@ -284,9 +266,10 @@ class HentaiFragment : Fragment() {
             fragment!!.mHentaiTask = null
 
             if (aBoolean) {
+                val mangaCells = fragment?.mangaCells ?: return
                 val listener = object : OnItemClickListener {
                     override fun onItemClick(view: View, position: Int) {
-                        val adapter = fragment?.mangaCells?.adapter as? HentaiAdapter ?: return
+                        val adapter = mangaCells.adapter as? HentaiAdapter ?: return
                         val item = adapter.getItem(position)
 
                         if (item.hasChapters) {
@@ -314,11 +297,12 @@ class HentaiFragment : Fragment() {
                     }
                 }
 
-                val adapter = fragment!!.mangaCells!!.adapter as? HentaiAdapter
+                val adapter = mangaCells.adapter as? HentaiAdapter
                 if(adapter == null)
-                    fragment?.mangaCells?.adapter = HentaiAdapter(fragment?.activity ?: return, hentaiBox, listener)
-                else
+                    mangaCells.adapter = HentaiAdapter(fragment?.activity ?: return, hentaiBox, listener)
+                else {
                     adapter.update(hentaiBox)
+                }
             }
         }
 

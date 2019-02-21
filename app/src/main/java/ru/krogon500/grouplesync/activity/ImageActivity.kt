@@ -9,11 +9,10 @@ import android.os.AsyncTask
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.util.Log
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.ProgressBar
-import android.widget.RelativeLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.viewpager.widget.ViewPager
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
@@ -62,10 +61,34 @@ class ImageActivity : AppCompatActivity() {
         outState.putInt("pos", view_pager.currentItem)
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.image_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        when(item?.itemId ?: return false){
+            android.R.id.home -> {
+                onBackPressed()
+                return true
+            }
+            R.id.rotateScreen -> {
+                requestedOrientation = if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
+                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                else
+                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
     @SuppressLint("SetTextI18n", "NewApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.image_activity)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
         mSettings = PreferenceManager.getDefaultSharedPreferences(this)
 
         val flags = (View.SYSTEM_UI_FLAG_LOW_PROFILE
@@ -79,7 +102,7 @@ class ImageActivity : AppCompatActivity() {
 
 
         view_pager.offscreenPageLimit = 1
-        rl.setOnApplyWindowInsetsListener { v, insets ->
+        appBar.setOnApplyWindowInsetsListener { v, insets ->
             (v.layoutParams as ViewGroup.MarginLayoutParams).rightMargin = insets.systemWindowInsetRight
             insets.consumeSystemWindowInsets()
         }
@@ -134,16 +157,9 @@ class ImageActivity : AppCompatActivity() {
             val volAndChap = link!!.getVolAndChapter()
             vol = volAndChap[0]
             chapter = volAndChap[1]
-            textView.text = "Глава " + vol + " – " + chapter + ". Страница " + (page + 1)
+            supportActionBar?.title = "Глава " + vol + " – " + chapter + ". Страница " + (page + 1)
         } else
-            textView.text = "Страница: ${page + 1}"
-
-        rotateScreen.setOnClickListener {
-            requestedOrientation = if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
-                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            else
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
+            supportActionBar?.title = "Страница: ${page + 1}"
 
         view_pager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener{
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
@@ -162,11 +178,10 @@ class ImageActivity : AppCompatActivity() {
 
         when {
             online -> {
-                val layout = findViewById<RelativeLayout>(R.id.rootView)
                 progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleLarge)
-                val params = RelativeLayout.LayoutParams(100.getDPI(applicationContext), 100.getDPI(applicationContext))
-                params.addRule(RelativeLayout.CENTER_IN_PARENT)
-                layout.addView(progressBar, params)
+                val params = CoordinatorLayout.LayoutParams(100.getDPI(applicationContext), 100.getDPI(applicationContext))
+                params.gravity = Gravity.CENTER
+                rootView.addView(progressBar, params)
                 progressBar.visibility = View.VISIBLE
 
                 if (type == Utils.GROUPLE) {
@@ -365,20 +380,20 @@ class ImageActivity : AppCompatActivity() {
         val adapter1 = view_pager!!.adapter as? ImageAdapter ?: return
         page = ImageAdapter.offset - position - 1
         if (type == Utils.HENTAI) {
-            textView.text = "Страница: ${page + 1}/${ImageAdapter.offset}"
+            supportActionBar?.title = "Страница: ${page + 1}/${ImageAdapter.offset}"
             if (page < 0) {
                 page = adapter1.count - position - 1
-                textView.text = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
+                supportActionBar?.title = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
             if (position == 0)
                 adapter1.onZeroPos()
         } else {
-            textView.text = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
+            supportActionBar?.title = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
             if (page < 0) {
                 link = link?.replace("\\d+/\\d+$".toRegex(), "$prevvol/$prevchapter")
                 currentChapter = chapters!!.indexOf(link!!)
                 page = adapter1.count - position - 1
-                textView.text = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
+                supportActionBar?.title = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
             if (adapter1.count > ImageAdapter.offset && position < ImageAdapter.offset) {
                 link = link?.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
@@ -394,21 +409,21 @@ class ImageActivity : AppCompatActivity() {
     internal fun onPageScrolled(position: Int) {
         val adapter1 = view_pager!!.adapter as? ImageAdapter ?: return
         if (type == Utils.HENTAI && onFirst){
-            textView.text = "Страница: ${page + 1}/${ImageAdapter.offset}"
+            supportActionBar?.title = "Страница: ${page + 1}/${ImageAdapter.offset}"
             if (page < 0) {
                 page = adapter1.count - position - 1
-                textView.text = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
+                supportActionBar?.title = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
             if (position == 0)
                 adapter1.onZeroPos()
         }else if (type == Utils.GROUPLE && onFirst) {
             page = ImageAdapter.offset - position - 1
-            textView.text = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
+            supportActionBar?.title = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
             if (page < 0) {
                 link = link?.replace("\\d+/\\d+$".toRegex(), "$prevvol/$prevchapter")
                 currentChapter = chapters!!.indexOf(link!!)
                 page = adapter1.count - position - 1
-                textView.text = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
+                supportActionBar?.title = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
             if (adapter1.count > ImageAdapter.offset && position < ImageAdapter.offset) {
                 link = link?.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
@@ -489,7 +504,7 @@ class ImageActivity : AppCompatActivity() {
         super.onResume()
         uiHelper.hide()
         if (ImageAdapter.opened) {
-            rl.animate().alpha(0.0f).duration = 100
+            appBar.animate().alpha(0.0f).duration = 100
             ImageAdapter.opened = false
         }
     }

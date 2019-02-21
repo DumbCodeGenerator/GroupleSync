@@ -293,14 +293,19 @@ class DownloadService : Service() {
 
         override fun onPostExecute(success: Boolean) {
             if (success) {
-                if (type == Utils.GROUPLE) {
+                if (type == Utils.GROUPLE && groupleManga != null) {
                     groupleManga?.saved = true
+                    groupleManga?.downloading = false
                     groupleManga?.page_all = page_all
-                    if(groupleManga != null)
-                        gChaptersBox.put(groupleManga!!)
+                    gChaptersBox.put(groupleManga!!)
+
                     files.reverse()
                     Utils.saveListFile(files, "grouple/$bId", "$vol.$chap.dat")
-                } else {
+                } else if(type == Utils.HENTAI && hentaiManga != null) {
+                    hentaiManga?.saved = true
+                    hentaiManga?.downloading = false
+                    hentaiBox.put(hentaiManga!!)
+
                     files.reverse()
                     Utils.saveListFile(files, "hentai", "$manga_id.dat")
                 }
@@ -320,11 +325,21 @@ class DownloadService : Service() {
             isTaskRunning = false
             DownloadService.queue.clear()
             DownloadService.titles.clear()
-            groupleManga?.saved = false
-            groupleManga?.downloading = false
 
-            if(groupleManga != null)
+            if(type == Utils.GROUPLE && groupleManga != null) {
+                groupleManga?.saved = false
+                groupleManga?.downloading = false
+
+                if(page_all > 0)
+                    groupleManga?.page_all = page_all
+
                 gChaptersBox.put(groupleManga!!)
+            }else if(type == Utils.HENTAI && hentaiManga != null){
+                hentaiManga?.saved = false
+                hentaiManga?.downloading = false
+
+                hentaiBox.put(hentaiManga!!)
+            }
 
             checkIfCanExecute(cancelled = true)
             runningTask = null

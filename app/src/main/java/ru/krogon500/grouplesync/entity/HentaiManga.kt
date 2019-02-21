@@ -3,6 +3,7 @@ package ru.krogon500.grouplesync.entity
 import android.graphics.Bitmap
 import android.media.ThumbnailUtils
 import android.view.View
+import androidx.recyclerview.widget.RecyclerView
 import com.nostra13.universalimageloader.core.ImageLoader
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener
 import io.objectbox.annotation.Backlink
@@ -10,8 +11,7 @@ import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 import io.objectbox.relation.ToMany
 import io.objectbox.relation.ToOne
-import ru.krogon500.grouplesync.adapter.HentaiAdapter
-import ru.krogon500.grouplesync.adapter.HentaiBrowserChaptersAdapter
+import ru.krogon500.grouplesync.interfaces.ICoverSettable
 
 @Entity class HentaiManga(@Id(assignable = true) var id: Long = 0,
                           var title: String,
@@ -25,7 +25,7 @@ import ru.krogon500.grouplesync.adapter.HentaiBrowserChaptersAdapter
                           var hasChapters: Boolean = false,
                           var saved: Boolean = false,
                           var downloading: Boolean = false,
-                          var readed: Boolean = false){
+                          var readed: Boolean = false): ICoverSettable{
     lateinit var origin: ToOne<HentaiManga>
 
     @Backlink
@@ -36,14 +36,14 @@ import ru.krogon500.grouplesync.adapter.HentaiBrowserChaptersAdapter
     val Bitmap.cropWidth : Int
         get() = (this.height.toDouble()*(100.toDouble()/140.toDouble())).toInt()
 
-    fun setCover(imageLoader: ImageLoader?, adapter: HentaiAdapter? = null, adapter2: HentaiBrowserChaptersAdapter? = null) {
+    override fun setCover(imageLoader: ImageLoader?, adapter: RecyclerView.Adapter<*>?, position: Int) {
         imageLoader?.loadImage(coverLink, object : SimpleImageLoadingListener() {
             override fun onLoadingComplete(imageUri: String?, view: View?, loadedImage: Bitmap?) {
                 loadedImage ?: return
 
                 cover = ThumbnailUtils.extractThumbnail(loadedImage, loadedImage.cropWidth, loadedImage.height, ThumbnailUtils.OPTIONS_RECYCLE_INPUT)
 
-                adapter?.notifyDataSetChanged() ?: adapter2?.notifyDataSetChanged() ?: return
+                adapter?.notifyItemChanged(position) ?: return
             }
         }) ?: return
     }

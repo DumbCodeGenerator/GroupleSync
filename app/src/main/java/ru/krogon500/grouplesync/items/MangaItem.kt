@@ -3,11 +3,13 @@ package ru.krogon500.grouplesync.items
 import android.graphics.Bitmap
 import android.media.ThumbnailUtils
 import android.view.View
+import androidx.recyclerview.widget.RecyclerView
+import com.nostra13.universalimageloader.core.ImageLoader
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener
-import ru.krogon500.grouplesync.activity.HentaiBrowser
-import ru.krogon500.grouplesync.adapter.HBrowserAdapter
+import ru.krogon500.grouplesync.interfaces.ICoverSettable
 
-class MangaItem(val id: Long, val title: String, val link: String) {
+class MangaItem(val id: Long, val title: String, val link: String):ICoverSettable {
+
     var cover: Bitmap? = null
     var coverLink: String? = null
     lateinit var series: String
@@ -25,17 +27,16 @@ class MangaItem(val id: Long, val title: String, val link: String) {
         this.haveChapters = haveChapters
     }
 
-    fun setCover(adapter: HBrowserAdapter) {
+    override fun setCover(imageLoader: ImageLoader?, adapter: RecyclerView.Adapter<*>?, position: Int) {
         coverLink ?: return
-        HentaiBrowser.imageLoader ?: return
-        HentaiBrowser.imageLoader!!.loadImage(coverLink, object : SimpleImageLoadingListener() {
+        imageLoader?.loadImage(coverLink, object : SimpleImageLoadingListener() {
             override fun onLoadingComplete(imageUri: String?, view: View?, loadedImage: Bitmap?) {
                 loadedImage ?: return
 
                 cover = ThumbnailUtils.extractThumbnail(loadedImage, loadedImage.cropWidth, loadedImage.height, ThumbnailUtils.OPTIONS_RECYCLE_INPUT)
 
-                adapter.notifyDataSetChanged()
+                adapter?.notifyItemChanged(position) ?: return
             }
-        })
+        }) ?: return
     }
 }

@@ -14,6 +14,7 @@ import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import ru.krogon500.grouplesync.R
+import ru.krogon500.grouplesync.RecyclerArray
 import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.Utils.isMyServiceRunning
 import ru.krogon500.grouplesync.entity.HentaiManga
@@ -26,14 +27,13 @@ import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.service.DownloadService
 import se.ajgarn.mpeventbus.MPEventBus
 import java.io.File
-import java.util.*
 
 class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Box<HentaiManga>, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<MangaCellsViewHolder>() {
     
-    private lateinit var hentaiManga: ArrayList<HentaiManga>
-    private val progresses = SparseArray<CustomArray>()
+    private var hentaiMangas = RecyclerArray<HentaiManga>(this, HentaiFragment.imageLoader)
+    private val progresses = SparseArray<ProgressArray>()
 
-    internal inner class CustomArray(var max: Int, var current: Int)
+    internal inner class ProgressArray(var max: Int, var current: Int)
 
     init {
         hentaiBookmarksBox.init()
@@ -48,20 +48,36 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
     }
 
     fun Box<HentaiManga>.init(){
-        hentaiManga = this.query {
+        val newHentaiManga = this.query {
             equal(HentaiManga_.inFavs, true)
-            sort { o1, o2 -> o1.id.compareTo(o2.id)} }.find() as ArrayList<HentaiManga>
-        hentaiManga.reverse()
-        hentaiManga.forEach { it.setCover(HentaiFragment.imageLoader, this@HentaiAdapter) }
+            sort { o1, o2 -> o1.id.compareTo(o2.id)} }.find().asReversed()
+
+        if(hentaiMangas.isEmpty()){
+            hentaiMangas.addAll(newHentaiManga)
+        }else{
+            val ids = ArrayList<Long>()
+
+            if(hentaiMangas.size < newHentaiManga.size) {
+                hentaiMangas.forEach { ids.add(it.id) }
+                newHentaiManga.forEachIndexed { index, hentaiManga ->
+                    if (hentaiManga.id !in ids)
+                        hentaiMangas.add(index, hentaiManga)
+                }
+            }else{
+                newHentaiManga.forEach { ids.add(it.id) }
+                hentaiMangas.removeAll(hentaiMangas.filter { it.id !in ids })
+            }
+        }
+
     }
 
 
     override fun getItemCount(): Int {
-        return hentaiManga.size
+        return hentaiMangas.size
     }
 
     /*fun remove(pos: Int) {
-        hentaiBookmarksBox.remove(hentaiManga[pos])
+        hentaiBookmarksBox.remove(hentaiMangas[pos])
         notifyDataSetChanged()
     }*/
 
@@ -71,6 +87,7 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
             return
         if (event.done && event.success) {
             setSaved(event.position)
+        }else if(event.done && !event.success){
             setDownload(event.position)
         } else if (!event.success) {
             setLoading(event.position, event.max, event.current)
@@ -78,54 +95,51 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
     }
 
     private fun setLoading(position: Int, max: Int, current: Int) {
-        val item = hentaiManga[position]
+        val item = hentaiMangas[position]
         item.saved = false
         item.downloading = true
-        progresses.put(position, CustomArray(max, current))
-        hentaiBookmarksBox.put(item)
-        notifyDataSetChanged()
+        progresses.put(position, ProgressArray(max, current))
+        HentaiFragment.hentaiBox.put(item)
+        notifyItemChanged(position)
     }
 
     private fun setSaved(position: Int) {
-        val item = hentaiManga[position]
+        val item = hentaiMangas[position]
         item.saved = true
         item.downloading = false
         if (progresses.get(position) != null)
             progresses.removeAt(position)
-        hentaiBookmarksBox.put(item)
-        notifyDataSetChanged()
+        HentaiFragment.hentaiBox.put(item)
+        notifyItemChanged(position)
     }
 
     private fun setDownload(position: Int) {
-        val item = hentaiManga[position]
+        val item = hentaiMangas[position]
         item.saved = false
         item.downloading = false
         if (progresses.get(position) != null)
             progresses.removeAt(position)
-        hentaiBookmarksBox.put(item)
-        notifyDataSetChanged()
+        HentaiFragment.hentaiBox.put(item)
+        notifyItemChanged(position)
     }
 
     fun update(hentaiBookmarksBox: Box<HentaiManga>) {
         this.hentaiBookmarksBox = hentaiBookmarksBox
         hentaiBookmarksBox.init()
-        notifyDataSetChanged()
+        //notifyDataSetChanged()
     }
 
     fun getItem(i: Int): HentaiManga {
-        return hentaiManga[i]
+        return hentaiMangas[i]
     }
 
     override fun getItemId(i: Int): Long {
-        return hentaiManga[i].id
+        return hentaiMangas[i].id
     }
 
     override fun onBindViewHolder(holder: MangaCellsViewHolder, position: Int) {
-        val item = hentaiManga[position]
+        val item = hentaiMangas[position]
         holder.textView.text = item.title
-        holder.imageView.adjustViewBounds = true
-
-
 
         if (item.cover != null)
             holder.imageView.setImageBitmap(item.cover)
@@ -139,7 +153,6 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
                 holder.hentaiDButton.visibility = View.GONE
             }
             item.saved -> {
-                //Log.d("lol", "saved pos: " + position);
                 holder.hentaiSaved.visibility = View.VISIBLE
                 holder.hentaiDown.visibility = View.GONE
                 holder.hentaiDButton.visibility = View.GONE
@@ -158,12 +171,9 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
                 holder.hentaiSaved.visibility = View.GONE
                 holder.hentaiDown.visibility = View.VISIBLE
                 if (progresses.get(position) != null) {
-                    holder.hentaiDown.visibility = View.VISIBLE
                     val sets = progresses.get(position)
                     holder.hentaiDown.progress = sets.current.toFloat()
                     holder.hentaiDown.max = sets.max
-                } else {
-                    holder.hentaiDown.visibility = View.GONE
                 }
                 holder.hentaiDButton.visibility = View.GONE
             }

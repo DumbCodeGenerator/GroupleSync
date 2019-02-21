@@ -49,7 +49,6 @@ class HentaiBrowser : AppCompatActivity() {
     private val pages = ArrayList<String>()
     private var hTask: HentaiBrowse? = null
     private var isLoading: Boolean = false
-    //private lateinit var progressBar: View
     private lateinit var layoutManager: LinearLayoutManager
     private var mOptionsMenu: Menu? = null
     private var searchView: SearchView? = null
@@ -97,7 +96,6 @@ class HentaiBrowser : AppCompatActivity() {
         if (!imageLoader!!.isInited) {
 
             val options = DisplayImageOptions.Builder()
-                    .cacheInMemory(true)
                     .bitmapConfig(Bitmap.Config.RGB_565)
                     .build()
             val config = ImageLoaderConfiguration.Builder(this@HentaiBrowser)
@@ -138,6 +136,7 @@ class HentaiBrowser : AppCompatActivity() {
                 val search_item = mOptionsMenu!!.findItem(R.id.action_search)
                 search_item!!.isVisible = false
             }
+            imageLoader?.stop()
             hTask = HentaiBrowse(mUser, mPass, Utils.hentaiBase + "/manga/", true)
             hTask?.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) ?: return@setOnRefreshListener
         }
@@ -206,7 +205,9 @@ class HentaiBrowser : AppCompatActivity() {
                 seriesLinks.clear()
                 if (mOptionsMenu != null) {
                     val search_item = mOptionsMenu!!.findItem(R.id.action_search)
+                    val series_item = mOptionsMenu!!.findItem(R.id.series)
                     search_item!!.isVisible = false
+                    series_item!!.isVisible = true
                 }
                 browseRefresh.isRefreshing = true
                 browseList.visibility = View.GONE
@@ -342,10 +343,12 @@ class HentaiBrowser : AppCompatActivity() {
                 if (hTask != null) {
                     hTask!!.cancel(true)
                     hTask = null
+                    imageLoader?.stop()
                 }
                 browseRefresh.isRefreshing = true
                 isLoading = true
                 browseList.visibility = View.GONE
+                item.isVisible = false
                 SeriesTask(mUser, mPass).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
                 return true
             }
@@ -515,7 +518,7 @@ class HentaiBrowser : AppCompatActivity() {
                     browseList!!.visibility = View.VISIBLE
 
                 if(browseList.adapter == null) {
-                    val adapter = HBrowserAdapter(mangaItems = mangaItems, addFooter = pages.size > 0 && pages.size > curPage, listener = browserListener)
+                    val adapter = HBrowserAdapter(data = mangaItems, addFooter = pages.size > 0 && pages.size > curPage, listener = browserListener)
                     browseList.adapter = adapter
                     visPos = 0
                 }else{
@@ -523,9 +526,10 @@ class HentaiBrowser : AppCompatActivity() {
                     if(adapter is HBrowserAdapter) {
                         adapter.addFooter = pages.size > 0 && pages.size > curPage
                         //adapter.listener = browserListener
-                        adapter.update(mangaItems, true)
+                        adapter.update(mangaItems, !firstPage)
+                        if(firstPage) visPos = 0
                     }else{
-                        browseList.adapter = HBrowserAdapter(mangaItems = mangaItems, addFooter = pages.size > 0 && pages.size > curPage, listener = browserListener)
+                        browseList.adapter = HBrowserAdapter(data = mangaItems, addFooter = pages.size > 0 && pages.size > curPage, listener = browserListener)
                         visPos = 0
                     }
                 }

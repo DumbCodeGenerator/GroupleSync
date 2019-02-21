@@ -86,6 +86,7 @@ class GroupleFragment : Fragment() {
         mPass = args.getString("pass")!!
 
         val refreshListener : SwipeRefreshLayout.OnRefreshListener? = SwipeRefreshLayout.OnRefreshListener {
+            imageLoader.stop()
             mGetBookmarksTask = GetBookmarksTask(mUser, mPass, true, this)
             mGetBookmarksTask?.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) ?: return@OnRefreshListener}
 

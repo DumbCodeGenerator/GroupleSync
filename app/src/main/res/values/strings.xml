@@ -14,4 +14,11 @@
     <string name="download_selected">Скачать выбранные</string>
     <string name="delete_selected">Удалить выбранные</string>
     <string name="page__">Страница: —</string>
+    <string name="rotate_screen">Повернуть экран</string>
+    <string name="hentaichan_brow">Hentaichan браузер</string>
+    <string name="sort_reverse">Сортировать в обратном порядке</string>
+    <string name="sync">Синхронизация</string>
+    <string name="check_new">Проверка новых глав</string>
+    <string name="logout">Выйти</string>
+    <string name="clear_table">Очистить таблицу</string>
 </resources>
