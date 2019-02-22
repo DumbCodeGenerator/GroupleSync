@@ -28,13 +28,18 @@ class MangaChaptersAdapter(private val mContext: Context,
                            var gChapters: ToMany<GroupleChapter>,
                            var gChaptersBox: Box<GroupleChapter>,
                            private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<ChaptersViewHolder>() {
-    val checkedItems: LinkedHashMap<Int, Boolean> = LinkedHashMap()
+    val checkedItems = BooleanArray(itemCount)
     var reversed: Boolean = false
+    lateinit var recyclerView: RecyclerView
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChaptersViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.chapter_item, parent, false)
         return ChaptersViewHolder(itemView, listener)
+    }
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        this.recyclerView = recyclerView
     }
 
     override fun onBindViewHolder(holder: ChaptersViewHolder, position: Int) {
@@ -45,8 +50,11 @@ class MangaChaptersAdapter(private val mContext: Context,
             val dSel = (mContext as Activity).scroll
             if (b && dSel != null && dSel.visibility != View.VISIBLE) {
                 dSel.visibility = View.VISIBLE
+                recyclerView.post { recyclerView.scrollBy(0, dSel.height) }
             } else if (!b && dSel != null && dSel.visibility != View.GONE && isAllUnchecked) {
+                recyclerView.post { recyclerView.scrollBy(0, -dSel.height) }
                 dSel.visibility = View.GONE
+                dSel.scrollTo(0, 0)
             }
         }
         holder.selected.isChecked = checkedItems.getOrElse(position) {false}
@@ -79,7 +87,7 @@ class MangaChaptersAdapter(private val mContext: Context,
 
     val isAllUnchecked: Boolean
         get() {
-            if(checkedItems.values.any { it })
+            if(checkedItems.any { it })
                 return false
             return true
         }
@@ -119,17 +127,16 @@ class MangaChaptersAdapter(private val mContext: Context,
     }
 
     fun checkAll() {
-        for (i in 0 until itemCount)
-            checkedItems[i] = true
+        checkedItems.fill(true)
         notifyDataSetChanged()
     }
 
     fun uncheckAll() {
-        for (i in 0 until itemCount)
-            checkedItems[i] = false
+        checkedItems.fill(false)
         val dSel = (mContext as Activity).scroll
         dSel.visibility = View.GONE
         notifyDataSetChanged()
+        recyclerView.post { recyclerView.scrollBy(0, -dSel.height) }
     }
 
     fun checkUnreaded() {
@@ -159,6 +166,7 @@ class MangaChaptersAdapter(private val mContext: Context,
 
     fun reverse(){
         gChapters.reverse()
+        checkedItems.reverse()
         reversed = !reversed
         notifyDataSetChanged()
     }

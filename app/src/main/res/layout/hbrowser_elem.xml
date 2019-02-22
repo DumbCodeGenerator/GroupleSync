@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:foreground="?android:attr/selectableItemBackground"
     android:clickable="true"
+    android:clipToPadding="true"
     android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground"
     app:cardBackgroundColor="#242424"
-    app:cardElevation="5dp">
+    app:cardElevation="10dp">
 
-    <RelativeLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/relativeLayout4"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
@@ -21,6 +22,8 @@
             android:layout_height="200dp"
             android:adjustViewBounds="true"
             android:src="@android:color/darker_gray"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             tools:ignore="ContentDescription" />
 
         <TextView
@@ -29,50 +32,51 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="7dp"
             android:layout_marginLeft="7dp"
-            android:layout_toEndOf="@+id/cover"
-            android:layout_toRightOf="@+id/cover"
             android:maxLines="3"
             android:textColor="@android:color/white"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            app:layout_constraintLeft_toRightOf="@+id/cover"
+            app:layout_constraintStart_toEndOf="@+id/cover"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/series"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/title"
+            android:layout_marginStart="7dp"
             android:layout_marginLeft="7dp"
             android:layout_marginTop="5dp"
-            android:layout_toRightOf="@+id/cover"
             android:textColor="@android:color/white"
             android:textSize="13sp"
-            android:layout_marginStart="7dp"
-            android:layout_toEndOf="@+id/cover" />
+            app:layout_constraintLeft_toRightOf="@+id/cover"
+            app:layout_constraintStart_toEndOf="@+id/cover"
+            app:layout_constraintTop_toBottomOf="@+id/title" />
 
         <TextView
             android:id="@+id/pluses"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/series"
+            android:layout_marginStart="7dp"
             android:layout_marginLeft="7dp"
             android:layout_marginTop="5dp"
-            android:layout_toRightOf="@+id/cover"
             android:minLines="1"
             android:textColor="@android:color/white"
             android:textSize="13sp"
-            android:layout_marginStart="7dp"
-            android:layout_toEndOf="@+id/cover" />
+            app:layout_constraintLeft_toRightOf="@+id/cover"
+            app:layout_constraintStart_toEndOf="@+id/cover"
+            app:layout_constraintTop_toBottomOf="@+id/series" />
 
         <TextView
             android:id="@+id/tags"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/pluses"
+            android:layout_marginStart="7dp"
             android:layout_marginLeft="7dp"
             android:layout_marginTop="5dp"
-            android:layout_toRightOf="@+id/cover"
             android:textColor="@android:color/white"
             android:textSize="13sp"
-            android:layout_marginStart="7dp"
-            android:layout_toEndOf="@+id/cover" />
-    </RelativeLayout>
+            app:layout_constraintLeft_toRightOf="@+id/cover"
+            app:layout_constraintStart_toEndOf="@+id/cover"
+            app:layout_constraintTop_toBottomOf="@+id/pluses" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

@@ -28,12 +28,17 @@ import se.ajgarn.mpeventbus.MPEventBus
 
 class HentaiChaptersAdapter(private val mContext: Context, private val origin_manga: HentaiManga, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<ChaptersViewHolder>() {
     var hChapters: ToMany<HentaiManga> = origin_manga.relateds
-    val checkedItems: LinkedHashMap<Int, Boolean> = LinkedHashMap()
+    val checkedItems = BooleanArray(itemCount)
+    lateinit var recyclerView: RecyclerView
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChaptersViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.chapter_item, parent, false)
         return ChaptersViewHolder(itemView, listener)
+    }
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        this.recyclerView = recyclerView
     }
 
     override fun onBindViewHolder(holder: ChaptersViewHolder, position: Int) {
@@ -50,8 +55,11 @@ class HentaiChaptersAdapter(private val mContext: Context, private val origin_ma
             val dSel = (mContext as Activity).scroll
             if (b && dSel != null && dSel.visibility != View.VISIBLE) {
                 dSel.visibility = View.VISIBLE
+                recyclerView.post { recyclerView.scrollBy(0, dSel.height) }
             } else if (!b && dSel != null && dSel.visibility != View.GONE && isAllUnchecked) {
+                recyclerView.post { recyclerView.scrollBy(0, -dSel.height) }
                 dSel.visibility = View.GONE
+                dSel.scrollTo(0, 0)
             }
         }
         holder.selected.isChecked = checkedItems.getOrElse(position) {false}
@@ -81,7 +89,7 @@ class HentaiChaptersAdapter(private val mContext: Context, private val origin_ma
 
     val isAllUnchecked: Boolean
         get() {
-            if(checkedItems.values.any { it })
+            if(checkedItems.any { it })
                 return false
             return true
         }
@@ -121,17 +129,16 @@ class HentaiChaptersAdapter(private val mContext: Context, private val origin_ma
     }
 
     fun checkAll() {
-        for (i in 0 until itemCount)
-            checkedItems[i] = true
+        checkedItems.fill(true)
         notifyDataSetChanged()
     }
 
     fun uncheckAll() {
-        for (i in 0 until itemCount)
-            checkedItems[i] = false
+        checkedItems.fill(false)
         val dSel = (mContext as Activity).findViewById<HorizontalScrollView>(R.id.scroll)
         dSel.visibility = View.GONE
         notifyDataSetChanged()
+        recyclerView.post { recyclerView.scrollBy(0, -dSel.height) }
     }
 
     override fun getItemCount(): Int {

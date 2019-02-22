@@ -15,13 +15,13 @@ import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.items.MangaItem
 
 class HBrowserAdapter(data: MutableList<MangaItem>, var addFooter: Boolean = false, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private val mangaItems: RecyclerArray<MangaItem> = RecyclerArray(this, HentaiBrowser.imageLoader)
+    private var mangaItems: RecyclerArray<MangaItem> = RecyclerArray(this, HentaiBrowser.imageLoader)
     val FOOTER_VIEW = 1
     val space = 30
     var selectedItem: Int? = null
 
     init {
-        mangaItems.addAll(data)
+        mangaItems.addAll(data, false)
     }
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
@@ -48,9 +48,7 @@ class HBrowserAdapter(data: MutableList<MangaItem>, var addFooter: Boolean = fal
     }
 
     fun update(data: MutableList<MangaItem>, append: Boolean) {
-        //data.forEach { it.setCover(this) }
-        if (append) mangaItems.addAll(data) else mangaItems.swap(data)
-        //notifyDataSetChanged()
+        if (append) mangaItems.addAll(data) else mangaItems = data as RecyclerArray<MangaItem>
     }
 
     override fun getItemCount(): Int {

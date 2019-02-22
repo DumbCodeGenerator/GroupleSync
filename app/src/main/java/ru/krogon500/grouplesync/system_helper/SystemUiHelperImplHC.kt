@@ -69,14 +69,17 @@ internal open class SystemUiHelperImplHC(activity: Activity, level: Int, flags: 
         isShowing = false
     }
 
+    @Suppress("Deprecation")
     protected open fun createShowFlags(): Int {
         return View.STATUS_BAR_VISIBLE
     }
 
+    @Suppress("Deprecation")
     protected open fun createHideFlags(): Int {
         return View.STATUS_BAR_HIDDEN
     }
 
+    @Suppress("Deprecation")
     protected open fun createTestFlags(): Int {
         return View.STATUS_BAR_HIDDEN
     }

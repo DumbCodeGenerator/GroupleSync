@@ -28,7 +28,7 @@ class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, priv
             ruCollator.strength = Collator.PRIMARY
             ruCollator.compare(o1.title, o2.title) } }.find()
         if(groupleBookmarks.isEmpty()) {
-            groupleBookmarks.addAll(newBookmarks)
+            groupleBookmarks.addAll(newBookmarks, false)
         }else{
             val ids = ArrayList<Long>()
 
@@ -83,7 +83,7 @@ class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, priv
     fun update(groupleBookmarksBox: Box<GroupleBookmark>) {
         this.groupleBookmarksBox = groupleBookmarksBox
         groupleBookmarksBox.init()
-        notifyDataSetChanged()
+        //notifyDataSetChanged()
     }
 
     fun getItem(position: Int): GroupleBookmark{

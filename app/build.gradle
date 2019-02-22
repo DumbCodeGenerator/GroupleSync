@@ -77,5 +77,4 @@ dependencies {
     implementation 'com.github.piasy:GlideImageViewFactory:1.5.6'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
 }

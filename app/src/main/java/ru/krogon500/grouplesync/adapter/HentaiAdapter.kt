@@ -53,7 +53,7 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
             sort { o1, o2 -> o1.id.compareTo(o2.id)} }.find().asReversed()
 
         if(hentaiMangas.isEmpty()){
-            hentaiMangas.addAll(newHentaiManga)
+            hentaiMangas.addAll(newHentaiManga, false)
         }else{
             val ids = ArrayList<Long>()
 

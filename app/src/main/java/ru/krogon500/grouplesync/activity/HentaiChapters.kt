@@ -177,9 +177,9 @@ class HentaiChapters : AppCompatActivity() {
     fun onDownloadSelectedClicked() {
         val adapter = chaptersList!!.adapter as HentaiChaptersAdapter
         val checkedItems = adapter.checkedItems
-        checkedItems.forEach {
-            if (it.value) {
-                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
+        checkedItems.forEachIndexed { index, b ->
+            if (b) {
+                val v = chaptersList.findViewHolderForAdapterPosition(index)?.itemView ?: return
                 val c = v.selected
                 val down = v.download
                 if (down.visibility == View.VISIBLE)
@@ -192,15 +192,15 @@ class HentaiChapters : AppCompatActivity() {
     fun onDeleteSelectedClicked() {
         val adapter = chaptersList!!.adapter as HentaiChaptersAdapter
         val checkedItems = adapter.checkedItems
-        checkedItems.forEach {
-            if (it.value) {
-                val chapterItem = adapter.getItem(it.key)
-                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
+        checkedItems.forEachIndexed { index, b ->
+            if (b) {
+                val chapterItem = adapter.getItem(index)
+                val v = chaptersList.findViewHolderForAdapterPosition(index)?.itemView ?: return
                 val c = v.selected
                 c.isChecked = false
                 //ImageView saved = v.findViewById(R.id.saved);
                 if (!chapterItem.saved)
-                    return@forEach
+                    return@forEachIndexed
                 val hentai_id_local = chapterItem.id
                 val mangaDir = File(Utils.hentaiPath + File.separator + hentai_id_local)
                 if(mangaDir.exists())
@@ -208,7 +208,7 @@ class HentaiChapters : AppCompatActivity() {
                 val infoFile = File(Utils.getHentaiInfoFile(hentai_id_local))
                 if(infoFile.exists())
                     infoFile.delete()
-                adapter.setDownload(it.key)
+                adapter.setDownload(index)
             }
         }
         adapter.notifyDataSetChanged()

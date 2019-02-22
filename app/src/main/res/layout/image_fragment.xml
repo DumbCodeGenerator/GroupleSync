@@ -1,17 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.github.piasy.biv.view.BigImageView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mBigImage"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center">
-
-    <com.github.piasy.biv.view.BigImageView
-        android:id="@+id/mBigImage"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:failureImage="@android:drawable/stat_notify_error"
-        app:failureImageInitScaleType="center"
-        app:optimizeDisplay="true"
-        />
-
-</RelativeLayout>
+    app:failureImage="@android:drawable/stat_notify_error"
+    app:failureImageInitScaleType="center"
+    app:optimizeDisplay="true" />

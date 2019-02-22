@@ -270,27 +270,26 @@ class MangaChapters : AppCompatActivity() {
         val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
         val checkedItems = adapter.checkedItems
 
-        checkedItems.forEach {
-            if (it.value) {
-                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
+        checkedItems.forEachIndexed { index, b ->
+            if (b) {
+                val v = chaptersList.findViewHolderForAdapterPosition(index)?.itemView ?: return
                 val c = v.selected
-                val item = adapter.getItem(it.key)
-                Log.d("lol", "item title: ${item.title}")
+                val item = adapter.getItem(index)
                 item.readed = true
                 gChaptersBox.put(item)
-                adapter.notifyDataSetChanged()
                 c.isChecked = false
             }
         }
+        adapter.notifyDataSetChanged()
     }
 
     fun onDownloadSelectedClicked() {
         val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
         val checkedItems = adapter.checkedItems
 
-        checkedItems.forEach {
-            if (it.value) {
-                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
+        checkedItems.forEachIndexed { index, b ->
+            if (b) {
+                val v = chaptersList.findViewHolderForAdapterPosition(index)?.itemView ?: return
                 val c = v.selected
                 val down = v.download
                 if (down.visibility == View.VISIBLE)
@@ -298,19 +297,20 @@ class MangaChapters : AppCompatActivity() {
                 c.isChecked = false
             }
         }
+        adapter.notifyDataSetChanged()
     }
 
     fun onDeleteSelectedClicked() {
         val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
         val checkedItems = adapter.checkedItems
-        checkedItems.forEach {
-            if (it.value) {
-                val chapterItem = adapter.getItem(it.key)
-                val v = chaptersList.findViewHolderForAdapterPosition(it.key)?.itemView ?: return
+        checkedItems.forEachIndexed { index, b ->
+            if (b) {
+                val chapterItem = adapter.getItem(index)
+                val v = chaptersList.findViewHolderForAdapterPosition(index)?.itemView ?: return
                 val c = v.findViewById<CheckBox>(R.id.selected)
                 c.isChecked = false
                 if (!chapterItem.saved)
-                    return@forEach
+                    return@forEachIndexed
 
                 val path = "${Utils.grouplePath}/b$bookmark_id/vol${chapterItem.vol}/${chapterItem.chap}"
                 val mangaDir = File(path)
@@ -319,7 +319,7 @@ class MangaChapters : AppCompatActivity() {
                 val infoFile = File("${Utils.cachePath}/info/grouple/b$bookmark_id/${chapterItem.vol}.${chapterItem.chap}.dat")
                 if(infoFile.exists())
                     infoFile.delete()
-                adapter.setDownload(it.key)
+                adapter.setDownload(index)
             }
         }
         adapter.notifyDataSetChanged()
