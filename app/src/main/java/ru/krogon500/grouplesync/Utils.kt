@@ -2,6 +2,7 @@ package ru.krogon500.grouplesync
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.annotation.TargetApi
 import android.app.Activity
 import android.app.ActivityManager
@@ -20,6 +21,7 @@ import android.view.View
 import android.view.animation.LinearInterpolator
 import android.view.inputmethod.InputMethodManager
 import androidx.annotation.ColorInt
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -423,5 +425,68 @@ object Utils {
         })
 
         return dividerItemDecor
+    }
+
+    fun animateListAndScroll(list: View, scroll: View, recyclerView: RecyclerView, expand: Boolean) {
+        val neededHeight = if(expand) list.height + scroll.height else list.height - scroll.height
+
+        val animator = slideAnimator(list.height, neededHeight, list, recyclerView)
+
+        val layoutParams = scroll.layoutParams as ConstraintLayout.LayoutParams
+        val scroll_bottomMargin = layoutParams.bottomMargin
+
+        val scrollAnimator = if (expand) translateAnimator(0f, (scroll.height + scroll_bottomMargin).toFloat(), scroll)
+                                        else translateAnimator((scroll.height + scroll_bottomMargin).toFloat(), 0f, scroll)
+        animator.start()
+        scrollAnimator.start()
+    }
+
+    /**
+     * Translate animation
+     *
+     * @param start   start animation from position
+     * @param end     end animation to position
+     * @param summary view to animate
+     * @return valueAnimator
+     */
+    private fun translateAnimator(start: Float, end: Float, summary: View): ValueAnimator {
+        val animator = ValueAnimator.ofFloat(start, end).also { it.duration = 150 }
+
+        animator.addUpdateListener {
+            summary.translationY = it.animatedValue as Float
+        }
+        return animator
+    }
+
+    /**
+     * Slide animation
+     *
+     * @param start   start animation from position
+     * @param end     end animation to position
+     * @param summary view to animate
+     * @param recyclerView recycler view for some operations after animation
+     * @return valueAnimator
+     */
+    private fun slideAnimator(start: Int, end: Int, summary: View, recyclerView: RecyclerView): ValueAnimator {
+        val animator = ValueAnimator.ofInt(start, end).also { it.duration = 150 }
+
+        var finalOffset = start
+
+        animator.addListener(object : AnimatorListenerAdapter(){
+            override fun onAnimationEnd(animation: Animator?) {
+                recyclerView.adapter?.notifyDataSetChanged()
+            }
+        })
+
+        animator.addUpdateListener {
+            val value = it.animatedValue as Int
+            finalOffset -= value
+            val layoutParams = summary.layoutParams
+            layoutParams.height = value
+            summary.layoutParams = layoutParams
+            recyclerView.offsetChildrenVertical(-finalOffset)
+            finalOffset = value
+        }
+        return animator
     }
 }

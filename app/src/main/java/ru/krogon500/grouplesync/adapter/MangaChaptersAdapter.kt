@@ -43,21 +43,21 @@ class MangaChaptersAdapter(private val mContext: Context,
     }
 
     override fun onBindViewHolder(holder: ChaptersViewHolder, position: Int) {
+
         val chapterItem = gChapters[position]
 
         holder.selected.setOnCheckedChangeListener { _, b ->
             checkedItems[position] = b
-            val dSel = (mContext as Activity).scroll
-            if (b && dSel != null && dSel.visibility != View.VISIBLE) {
-                dSel.visibility = View.VISIBLE
-                recyclerView.post { recyclerView.scrollBy(0, dSel.height) }
-            } else if (!b && dSel != null && dSel.visibility != View.GONE && isAllUnchecked) {
-                recyclerView.post { recyclerView.scrollBy(0, -dSel.height) }
-                dSel.visibility = View.GONE
+            val dSel = (mContext as Activity).scroll ?: return@setOnCheckedChangeListener
+            if (b && dSel.translationY > 0) {
+                Utils.animateListAndScroll(recyclerView.parent.parent as View, dSel, recyclerView, false)
+            } else if (!b && dSel.translationY == 0f && isAllUnchecked) {
+                Utils.animateListAndScroll(recyclerView.parent.parent as View, dSel, recyclerView, true)
                 dSel.scrollTo(0, 0)
             }
         }
-        holder.selected.isChecked = checkedItems.getOrElse(position) {false}
+        holder.selected.isChecked = checkedItems[position]
+        //Log.d("lol", "bind on $position and checked is ${holder.selected.isChecked}")
         holder.title.text = chapterItem.title.getSpannedFromHtml()
 
         holder.title.setTextColor(if (chapterItem.readed) Color.GRAY else Color.WHITE)
@@ -133,10 +133,7 @@ class MangaChaptersAdapter(private val mContext: Context,
 
     fun uncheckAll() {
         checkedItems.fill(false)
-        val dSel = (mContext as Activity).scroll
-        dSel.visibility = View.GONE
         notifyDataSetChanged()
-        recyclerView.post { recyclerView.scrollBy(0, -dSel.height) }
     }
 
     fun checkUnreaded() {

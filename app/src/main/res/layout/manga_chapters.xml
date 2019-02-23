@@ -11,7 +11,6 @@
         android:id="@+id/coordinatorLayout2"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@+id/scroll"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
@@ -24,7 +23,8 @@
                 android:id="@+id/chaptersList"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scrollbars="vertical" />
+                android:scrollbars="vertical"
+                app:fastScrollEnabled="false" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -45,7 +45,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:scrollbars="none"
-        android:visibility="gone"
+        android:translationY="63dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
