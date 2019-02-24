@@ -32,6 +32,10 @@ class MangaChaptersAdapter(private val mContext: Context,
     var reversed: Boolean = false
     lateinit var recyclerView: RecyclerView
 
+    init {
+        gChapters.sortByDescending { it.date }
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChaptersViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.chapter_item, parent, false)
@@ -91,10 +95,6 @@ class MangaChaptersAdapter(private val mContext: Context,
                 return false
             return true
         }
-
-    init {
-        gChapters.sortByDescending { it.date }
-    }
 
     fun update(chapterItems: ToMany<GroupleChapter>){
         this.gChapters = chapterItems

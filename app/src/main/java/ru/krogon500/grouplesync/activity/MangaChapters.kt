@@ -217,8 +217,8 @@ class MangaChapters : AppCompatActivity() {
         gChaptersBox = (application as App).boxStore.boxFor()
         gChapters = gBookmark.chapters
 
-        if(gChapters.isNotEmpty())
-            gChapters.sortByDescending { it.date }
+        //if(gChapters.isNotEmpty())
+        //   gChapters.sortByDescending { it.date }
 
         chaptersRefresh.setColorSchemeColors(ContextCompat.getColor(this, R.color.colorAccent))
         chaptersRefresh.isRefreshing = true
@@ -478,7 +478,7 @@ class MangaChapters : AppCompatActivity() {
                     val title = "Глава $chapterName$sup"
                     val volAndChap = chapterLink.getVolAndChapter()
 
-                    val chapterItem = gChapters.find { chapter -> chapter.link == chapterLink } ?:
+                    val chapterItem = gChapters.find { chapter -> chapter.link == chapterLink.trim() } ?:
                                                     GroupleChapter(id = 0, title = title, link = chapterLink, vol = volAndChap[0], chap = volAndChap[1], date = System.nanoTime())
 
                     if(refresh || gChapters.size < chapters.size) {
@@ -513,10 +513,10 @@ class MangaChapters : AppCompatActivity() {
 
         }
 
-        override fun onPostExecute(success: Boolean?) {
-            chaptersRefresh!!.isRefreshing = false
+        override fun onPostExecute(success: Boolean) {
+            chaptersRefresh.isRefreshing = false
             chaptersList.visibility = View.VISIBLE
-            if (success!!) {
+            if (success) {
                 val adapter: MangaChaptersAdapter
                 if(chaptersList.adapter == null) {
                     adapter = MangaChaptersAdapter(this@MangaChapters, gChapters, gChaptersBox, onItemClickListener)

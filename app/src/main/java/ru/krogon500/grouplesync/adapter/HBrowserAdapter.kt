@@ -48,7 +48,7 @@ class HBrowserAdapter(data: MutableList<MangaItem>, var addFooter: Boolean = fal
     }
 
     fun update(data: MutableList<MangaItem>, append: Boolean) {
-        if (append) mangaItems.addAll(data) else mangaItems = data as RecyclerArray<MangaItem>
+        if (append) mangaItems.addAll(data, true) else mangaItems = data as RecyclerArray<MangaItem>
     }
 
     override fun getItemCount(): Int {

@@ -23,6 +23,8 @@ import ru.krogon500.grouplesync.Utils.hideView
 import ru.krogon500.grouplesync.Utils.isMyServiceRunning
 import ru.krogon500.grouplesync.adapter.FragmentAdapter
 import ru.krogon500.grouplesync.entity.MyObjectBox
+import ru.krogon500.grouplesync.fragment.GroupleFragment
+import ru.krogon500.grouplesync.fragment.HentaiFragment
 import ru.krogon500.grouplesync.fragment.LoginFragment
 import ru.krogon500.grouplesync.service.SyncService
 import ru.krogon500.grouplesync.service.UpdateService
@@ -44,12 +46,9 @@ class MainActivity : AppCompatActivity() {
             requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
                     MainActivity.MY_PERM_REQ_CODE)
 
-            // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-            // app-defined int constant. The callback method gets the
-            // result of the request.
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
             start()
-        else
+        else if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
             start()
 
     }
@@ -71,7 +70,7 @@ class MainActivity : AppCompatActivity() {
             }
             override fun onTabSelected(tab: TabLayout.Tab) {
                 val item = fragmentAdapter.getItem(pager.currentItem)
-                if(item !is LoginFragment){
+                if((item is GroupleFragment || item is HentaiFragment) && item.isVisible){
                     val grid = item.mangaCells ?: return
                     val first = (grid.layoutManager as? GridLayoutManager ?: return).findFirstCompletelyVisibleItemPosition()
                     if(first == 0){
