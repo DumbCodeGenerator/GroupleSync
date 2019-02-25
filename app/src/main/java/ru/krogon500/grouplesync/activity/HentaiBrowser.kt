@@ -31,7 +31,8 @@ import ru.krogon500.grouplesync.Utils.hideView
 import ru.krogon500.grouplesync.Utils.showView
 import ru.krogon500.grouplesync.adapter.HBrowserAdapter
 import ru.krogon500.grouplesync.adapter.SimpleArrayAdapter
-import ru.krogon500.grouplesync.fragment.HentaiFragment
+import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mPass
+import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mUser
 import ru.krogon500.grouplesync.image_loaders.HentaiBrowserImageLoader
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.items.MangaItem
@@ -78,11 +79,8 @@ class HentaiBrowser : AppCompatActivity() {
             val mangaItem = adapter.getItem(position)
             val intent = Intent(applicationContext, ImageActivity::class.java)
             intent.putExtra("type", Utils.HENTAI)
-            intent.putExtra("title", mangaItem.title)
+            intent.putExtra("fromBrowser", true)
             intent.putExtra("link", mangaItem.link)
-            intent.putExtra("online", true)
-            intent.putExtra("user", mUser)
-            intent.putExtra("pass", mPass)
             startActivity(intent)
         }
     }
@@ -542,7 +540,5 @@ class HentaiBrowser : AppCompatActivity() {
 
     companion object {
         internal var imageLoader: ImageLoader? = HentaiBrowserImageLoader.getInstance()
-        internal val mUser: String = HentaiFragment.mUser
-        internal val mPass: String = HentaiFragment.mPass
     }
 }

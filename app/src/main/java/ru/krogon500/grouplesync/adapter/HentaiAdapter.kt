@@ -109,7 +109,6 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
         item.downloading = false
         if (progresses.get(position) != null)
             progresses.removeAt(position)
-        HentaiFragment.hentaiBox.put(item)
         notifyItemChanged(position)
     }
 
@@ -117,6 +116,7 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
         val item = hentaiMangas[position]
         item.saved = false
         item.downloading = false
+        item.files = null
         if (progresses.get(position) != null)
             progresses.removeAt(position)
         HentaiFragment.hentaiBox.put(item)
@@ -161,9 +161,6 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
                     val mangaDir = File(path)
                     if(mangaDir.exists())
                         mangaDir.deleteRecursively()
-                    val infoFile = File(Utils.getHentaiInfoFile(item.id))
-                    if(infoFile.exists())
-                        infoFile.delete()
                     setDownload(position)
                 }
             }

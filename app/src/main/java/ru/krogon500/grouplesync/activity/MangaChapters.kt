@@ -13,13 +13,13 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.animation.LinearInterpolator
-import android.widget.CheckBox
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.SimpleItemAnimator
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import io.objectbox.relation.ToMany
@@ -47,7 +47,6 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
 import java.util.regex.Pattern
-import kotlin.collections.ArrayList
 
 class MangaChapters : AppCompatActivity() {
     internal lateinit var gBookmark: GroupleBookmark
@@ -178,8 +177,8 @@ class MangaChapters : AppCompatActivity() {
             }
 
             R.id.clear_table -> {
+                gChaptersBox.remove(gChapters)
                 gChapters.clear()
-                gChapters.applyChangesToDb()
                 val adapter = chaptersList.adapter as? MangaChaptersAdapter
                 adapter?.notifyDataSetChanged()
                 Toast.makeText(applicationContext, "База очищена", Toast.LENGTH_SHORT).show()
@@ -201,6 +200,7 @@ class MangaChapters : AppCompatActivity() {
 
         layoutManager = LinearLayoutManager(this)
         chaptersList.layoutManager = layoutManager
+        (chaptersList.itemAnimator as SimpleItemAnimator).supportsChangeAnimations = false
         chaptersList.addItemDecoration(Utils.dividerItemDecor(this, Color.WHITE))
         chaptersList.addOnScrollListener(listener)
 
@@ -303,11 +303,12 @@ class MangaChapters : AppCompatActivity() {
     fun onDeleteSelectedClicked() {
         val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
         val checkedItems = adapter.checkedItems
+        Log.d("lol", "deleted count: ${checkedItems.count { it }}")
         checkedItems.forEachIndexed { index, b ->
             if (b) {
                 val chapterItem = adapter.getItem(index)
                 val v = chaptersList.findViewHolderForAdapterPosition(index)?.itemView ?: return
-                val c = v.findViewById<CheckBox>(R.id.selected)
+                val c = v.selected
                 c.isChecked = false
                 if (!chapterItem.saved)
                     return@forEachIndexed
@@ -316,39 +317,22 @@ class MangaChapters : AppCompatActivity() {
                 val mangaDir = File(path)
                 if(mangaDir.exists())
                     mangaDir.deleteRecursively()
-                val infoFile = File("${Utils.cachePath}/info/grouple/b$bookmark_id/${chapterItem.vol}.${chapterItem.chap}.dat")
-                if(infoFile.exists())
-                    infoFile.delete()
                 adapter.setDownload(index)
             }
         }
-        adapter.notifyDataSetChanged()
+        //adapter.notifyDataSetChanged()
     }
 
     private val onItemClickListener = object : OnItemClickListener{
         override fun onItemClick(view: View, position: Int) {
             val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
             val selected = view.selected
-            val chapterLinks = ArrayList<String>()
-            adapter.gChapters.forEach {
-                chapterLinks.add(it.link)
-            }
 
-            if(!adapter.reversed)
-                chapterLinks.reverse()
-
-            val chapterItem = adapter.getItem(position)
-            val link = chapterItem.link
             if (adapter.isAllUnchecked) {
                 val intent = Intent(this@MangaChapters, ImageActivity::class.java)
                 intent.putExtra("id", bookmark_id)
-                intent.putExtra("link", link)
-                intent.putExtra("chapters", chapterLinks)
-                intent.putExtra("vol", chapterItem.vol)
-                intent.putExtra("chapter", chapterItem.chap)
+                intent.putExtra("chapter_id", adapter.getItem(position).id)
                 intent.putExtra("type", Utils.GROUPLE)
-                intent.putExtra("online", !chapterItem.saved)
-                intent.putExtra("page", chapterItem.page)
                 startActivity(intent)
             } else {
                 selected.isChecked = !selected.isChecked

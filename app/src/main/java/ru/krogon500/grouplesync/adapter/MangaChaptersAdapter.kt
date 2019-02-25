@@ -106,8 +106,7 @@ class MangaChaptersAdapter(private val mContext: Context,
         val chapterItem = gChapters[position]
         chapterItem.downloading = false
         chapterItem.saved = true
-        gChaptersBox.put(chapterItem)
-        notifyDataSetChanged()
+        notifyItemChanged(position)
     }
 
     fun setLoading(position: Int) {
@@ -115,15 +114,16 @@ class MangaChaptersAdapter(private val mContext: Context,
         chapterItem.saved = false
         chapterItem.downloading = true
         gChaptersBox.put(chapterItem)
-        notifyDataSetChanged()
+        notifyItemChanged(position)
     }
 
     fun setDownload(position: Int) {
         val chapterItem = gChapters[position]
         chapterItem.saved = false
         chapterItem.downloading = false
+        chapterItem.files = null
         gChaptersBox.put(chapterItem)
-        notifyDataSetChanged()
+        notifyItemChanged(position)
     }
 
     fun checkAll() {

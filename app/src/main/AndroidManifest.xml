@@ -13,6 +13,7 @@
     <application
         android:name=".App"
         android:allowBackup="true"
+        android:fullBackupContent="true"
         android:icon="@mipmap/ic_launcher"
         android:label="GroupleSync"
         android:resizeableActivity="true"
@@ -21,7 +22,7 @@
         android:theme="@style/AppTheme"
         tools:replace="android:label,android:allowBackup,android:icon"
         tools:targetApi="n"
-        android:fullBackupContent="true">
+        tools:ignore="GoogleAppIndexingWarning">
         <activity
             android:name=".activity.MainActivity"
             android:label="GroupleSync"
@@ -66,30 +67,6 @@
             android:screenOrientation="landscape"
             android:configChanges="keyboardHidden|screenSize|orientation"
             android:theme="@style/AppTheme.Fullscreen.NoTitleBar" >
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="http"
-                    android:host="henchan.me"
-                    android:pathPrefix="/online" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="http"
-                    android:host="mintmanga.com"
-                    android:pathPattern="/..*/vol.*/..*" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="http"
-                    android:host="readmanga.me"
-                    android:pathPattern="/..*/vol.*/..*" />
-            </intent-filter>
         </activity>
         <activity android:name=".activity.SearchActivity">
             <intent-filter>

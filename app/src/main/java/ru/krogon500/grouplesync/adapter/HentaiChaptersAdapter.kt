@@ -27,7 +27,7 @@ import se.ajgarn.mpeventbus.MPEventBus
 
 
 class HentaiChaptersAdapter(private val mContext: Context, private val origin_manga: HentaiManga, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<ChaptersViewHolder>() {
-    var hChapters: ToMany<HentaiManga> = origin_manga.relateds
+    var hChapters: ToMany<HentaiManga> = origin_manga.relateds.also { it.sortBy { chapter -> chapter.date } }
     val checkedItems = BooleanArray(itemCount)
     lateinit var recyclerView: RecyclerView
 

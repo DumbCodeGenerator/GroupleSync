@@ -13,12 +13,14 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
+import io.objectbox.kotlin.boxFor
 import io.objectbox.relation.ToMany
 import kotlinx.android.synthetic.main.chapter_item.view.*
 import kotlinx.android.synthetic.main.manga_chapters.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import ru.krogon500.grouplesync.App
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.Utils.getHQThumbnail
@@ -97,8 +99,9 @@ class HentaiChapters : AppCompatActivity() {
                 return true
             }
             R.id.clear_table -> {
+                val hentaiBox = (application as App).boxStore.boxFor<HentaiManga>()
+                hentaiBox.remove(hChapters)
                 hChapters?.clear() ?: return false
-                hChapters?.applyChangesToDb()
                 val adapter = chaptersList.adapter as? HentaiChaptersAdapter ?: return false
                 adapter.notifyDataSetChanged()
                 Toast.makeText(applicationContext, "База очищена", Toast.LENGTH_SHORT).show()
@@ -219,24 +222,17 @@ class HentaiChapters : AppCompatActivity() {
             val adapter = chaptersList.adapter as? HentaiBrowserChaptersAdapter ?: return
 
             val links = ArrayList<String>()
-            val ids = ArrayList<Long>()
             val chapterItem: HentaiManga = adapter.getItem(position)
             adapter.hChapters.forEach {
                 links.add(it.link)
-                ids.add(it.id)
             }
 
             val intent = Intent(this@HentaiChapters, ImageActivity::class.java)
-            Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
-            intent.putExtra("id", chapterItem.id)
-            intent.putExtra("ids", ids)
-            intent.putExtra("title", chapterItem.title)
-            intent.putExtra("type", Utils.HENTAI)
+            Log.d("lol", "chapters size: ${links.size}")
             intent.putExtra("link", chapterItem.link)
-            intent.putExtra("chapters", links)
-            intent.putExtra("page", chapterItem.page)
-            intent.putExtra("online", !chapterItem.saved)
+            intent.putExtra("type", Utils.HENTAI)
             intent.putExtra("fromBrowser", fromBrowser)
+            intent.putExtra("chapters", links)
 
             startActivity(intent)
         }
@@ -246,25 +242,11 @@ class HentaiChapters : AppCompatActivity() {
     private val onChapterClickListener = object : OnItemClickListener{
         override fun onItemClick(view: View, position: Int) {
             val adapter = chaptersList.adapter as? HentaiChaptersAdapter ?: return
-
-            val links = ArrayList<String>()
-            val ids = ArrayList<Long>()
             val chapterItem: HentaiManga = adapter.getItem(position)
-            adapter.hChapters.forEach {
-                links.add(it.link)
-                ids.add(it.id)
-            }
 
             val intent = Intent(this@HentaiChapters, ImageActivity::class.java)
-            Log.d("lol", "ids and chapters size: ${ids.size}/${links.size}")
             intent.putExtra("id", chapterItem.id)
-            intent.putExtra("ids", ids)
-            intent.putExtra("title", chapterItem.title)
             intent.putExtra("type", Utils.HENTAI)
-            intent.putExtra("link", chapterItem.link)
-            intent.putExtra("chapters", links)
-            intent.putExtra("page", chapterItem.page)
-            intent.putExtra("online", !chapterItem.saved)
 
             startActivity(intent)
         }

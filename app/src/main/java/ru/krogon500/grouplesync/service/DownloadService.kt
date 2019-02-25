@@ -272,7 +272,7 @@ class DownloadService : Service() {
         private fun writeToFile(link: String) {
             val split = link.split("/")
             val localImg = File(path + File.separator + split[split.size - 1])
-            files.add(localImg.absolutePath)
+            files.add("file://" + localImg.absolutePath)
             if (localImg.exists())
                 return
             val image = Jsoup.connect(link).ignoreContentType(true).execute().bodyAsBytes()
@@ -282,12 +282,15 @@ class DownloadService : Service() {
 
         @SuppressLint("RestrictedApi")
         override fun onProgressUpdate(vararg values: Int?) {
-            val remoteView = mBuilder.bigContentView
-            remoteView.setProgressBar(R.id.notif_progress, values[1]!!, values[0]!!, false)
-            mBuilder.contentView.setProgressBar(R.id.notif_progress, values[1]!!, values[0]!!, false)
-            remoteView.setTextViewText(R.id.notif_content, "$msg ${values[0]}/${values[1]}")
+            val progress = values[0] ?: return
+            val max = values[1] ?: return
 
-            MPEventBus.getDefault().postToAll(UpdateEvent(values[0]!!, values[1]!!, position, false, false, link, original_id, type))
+            val remoteView = mBuilder.bigContentView
+            remoteView.setProgressBar(R.id.notif_progress, max, progress, false)
+            mBuilder.contentView.setProgressBar(R.id.notif_progress, max, progress, false)
+            remoteView.setTextViewText(R.id.notif_content, "${msg ?: ""} $progress/$max")
+
+            MPEventBus.getDefault().postToAll(UpdateEvent(progress, max, position, false, false, link, original_id, type))
             nm.notify(id, mBuilder.build())
         }
 
@@ -297,17 +300,13 @@ class DownloadService : Service() {
                     groupleManga?.saved = true
                     groupleManga?.downloading = false
                     groupleManga?.page_all = page_all
+                    groupleManga?.files = files.asReversed()
                     gChaptersBox.put(groupleManga!!)
-
-                    files.reverse()
-                    Utils.saveListFile(files, "grouple/$bId", "$vol.$chap.dat")
                 } else if(type == Utils.HENTAI && hentaiManga != null) {
                     hentaiManga?.saved = true
                     hentaiManga?.downloading = false
+                    hentaiManga?.files = files.asReversed()
                     hentaiBox.put(hentaiManga!!)
-
-                    files.reverse()
-                    Utils.saveListFile(files, "hentai", "$manga_id.dat")
                 }
             }
             MPEventBus.getDefault().postToAll(UpdateEvent(0, page_all, position, true, success, link, original_id, type))

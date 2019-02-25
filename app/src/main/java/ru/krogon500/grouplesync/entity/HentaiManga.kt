@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.nostra13.universalimageloader.core.ImageLoader
 import com.nostra13.universalimageloader.core.listener.SimpleImageLoadingListener
 import io.objectbox.annotation.Backlink
+import io.objectbox.annotation.Convert
 import io.objectbox.annotation.Entity
 import io.objectbox.annotation.Id
 import io.objectbox.relation.ToMany
@@ -25,7 +26,10 @@ import ru.krogon500.grouplesync.interfaces.ICoverSettable
                           var hasChapters: Boolean = false,
                           var saved: Boolean = false,
                           var downloading: Boolean = false,
-                          var readed: Boolean = false): ICoverSettable{
+                          var readed: Boolean = false,
+
+                          @Convert(converter = ArrayToObjectBox::class, dbType = String::class)
+                          var files: List<String>? = null): ICoverSettable{
     lateinit var origin: ToOne<HentaiManga>
 
     @Backlink

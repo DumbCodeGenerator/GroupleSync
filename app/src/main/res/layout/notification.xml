@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/relativeLayout6"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingLeft="16dp"
+    android:paddingLeft="13dp"
     android:paddingTop="7dp"
-    android:paddingRight="16dp"
-    android:paddingBottom="7dp"
-    android:id="@+id/relativeLayout6">
+    android:paddingRight="13dp"
+    android:paddingBottom="7dp">
 
     <TextView
         android:id="@+id/notif_title"
         style="@style/TextAppearance.Compat.Notification.Title"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="8dp"
@@ -27,33 +26,27 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:ignore="HardcodedText" />
 
+    <android.widget.ProgressBar
+        android:id="@+id/notif_progress"
+        style="@style/ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/notif_title"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:progress="20" />
+
     <TextView
         android:id="@+id/notif_content"
         style="@style/TextAppearance.Compat.Notification"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/notif_title"
+        android:layout_below="@+id/notif_progress"
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
         android:layout_marginEnd="8dp"
         android:layout_marginRight="8dp"
         android:text="TextView"
-        android:visibility="visible"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/notif_progress"
+        android:visibility="gone"
         tools:ignore="HardcodedText" />
-
-    <android.widget.ProgressBar
-        android:id="@+id/notif_progress"
-        style="@style/ProgressBar.Horizontal"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/notif_title"
-        android:layout_marginEnd="8dp"
-        android:layout_marginRight="8dp"
-        android:progress="20"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/notif_title" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+</RelativeLayout>

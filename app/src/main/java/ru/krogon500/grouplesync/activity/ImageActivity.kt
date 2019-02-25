@@ -1,7 +1,6 @@
 package ru.krogon500.grouplesync.activity
 
 import android.annotation.SuppressLint
-import android.content.Intent.ACTION_VIEW
 import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
@@ -16,42 +15,44 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.viewpager.widget.ViewPager
 import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
+import io.objectbox.relation.ToMany
 import kotlinx.android.synthetic.main.image_activity.*
 import org.jsoup.Jsoup
 import ru.krogon500.grouplesync.App
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.Utils.getDPI
-import ru.krogon500.grouplesync.Utils.getVolAndChapter
 import ru.krogon500.grouplesync.adapter.ImageAdapter
+import ru.krogon500.grouplesync.entity.GroupleBookmark
+import ru.krogon500.grouplesync.entity.GroupleChapter
 import ru.krogon500.grouplesync.entity.HentaiManga
 import ru.krogon500.grouplesync.fragment.HentaiFragment
 import ru.krogon500.grouplesync.system_helper.SystemUiHelper
-import java.io.File
-import java.net.URL
-import java.util.*
 import java.util.regex.Pattern
 
 class ImageActivity : AppCompatActivity() {
     private lateinit var mSettings: SharedPreferences
-    internal var type: Byte = 0
-    private lateinit var root: String
-    internal var link: String? = null
-    internal var id: Long? = null
-    private var ids: ArrayList<Long>? = null
-    internal var chapters: ArrayList<String>? = null
-    private var paths = LinkedHashMap<String, String>()
+    private var type: Byte = 0
+    private var link: String? = null
+    private lateinit var gBookmarksBox: Box<GroupleBookmark>
+    private lateinit var gChaptersBox: Box<GroupleChapter>
+    private lateinit var gBookmark: GroupleBookmark
+    private lateinit var gChapters: ToMany<GroupleChapter>
+
+    private lateinit var hentaiBox: Box<HentaiManga>
+    private var hChapters: ToMany<HentaiManga>? = null
+    private var chaptersLinks: ArrayList<String>? = null
+
+    private var nextChapter: Any? = null
+    private var prevChapter: Any? = null
+
+    private var id: Long = 0
+
     internal lateinit var progressBar: ProgressBar
     internal lateinit var uiHelper: SystemUiHelper
-    private lateinit var mUser: String
-    private lateinit var mPass: String
 
-    private var prevvol: Int = 0
-    private var prevchapter: Int = 0
     private var page: Int = 0
     private var onFirst = true
-    private var online: Boolean = false
-    private lateinit var mContext: ImageActivity
 
     private var groupleTask: GroupleOnlineImagesTask? = null
     private var hentaiTask: HentaiOnlineImagesTask? = null
@@ -86,6 +87,7 @@ class ImageActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.image_activity)
+
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -98,72 +100,30 @@ class ImageActivity : AppCompatActivity() {
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION)
         uiHelper = SystemUiHelper(this, SystemUiHelper.LEVEL_IMMERSIVE, flags)
-        mContext = this
 
-
-        view_pager.offscreenPageLimit = 1
         appBar.setOnApplyWindowInsetsListener { v, insets ->
             (v.layoutParams as ViewGroup.MarginLayoutParams).rightMargin = insets.systemWindowInsetRight
             insets.consumeSystemWindowInsets()
         }
+        val args = intent.extras ?: return
 
-        val adapter: ImageAdapter
-        val action = intent.action
-        val data = intent.dataString
-        val args : Bundle
-        if(ACTION_VIEW == action && data != null){
-            fromBrowser = true
-            type = if (data.contains("henchan")) Utils.HENTAI else Utils.GROUPLE
-            online = true
-            link = if (type == Utils.GROUPLE) data.split("#")[0] else data
-            if(type == Utils.HENTAI) {
-                mUser = mSettings.getString("user_h", "nothing")!!
-                mPass = mSettings.getString("pass_h", "nothing")!!
-                val pattern = Pattern.compile("/\\d+")
-                val matcher = pattern.matcher(data)
-                if (matcher.find())
-                    id = matcher.group(0).substring(1).toLong()
-            }else{
-                val split = data.split("=")
-                if (split.size == 2)
-                    page = split[1].toInt()
-            }
+        fromBrowser = args.containsKey("fromBrowser")
+        type = args.getByte("type")
 
-        }else {
-            mUser = HentaiFragment.mUser
-            mPass = HentaiFragment.mPass
-            args = intent.extras!!
-            fromBrowser = args.containsKey("fromBrowser")
-            type = args.getByte("type")
-            online = args.getBoolean("online")
-            link = args.getString("link")
+        if(!fromBrowser) {
             id = args.getLong("id")
-
-            if (args.containsKey("ids")) {
-                @Suppress("UNCHECKED_CAST")
-                ids = args.get("ids") as ArrayList<Long>
-            }
-
-            if (args.containsKey("chapters")) {
-                chapters = args.getStringArrayList("chapters")
-                currentChapter = if (chapters != null) chapters!!.indexOf(link!!) else 0
-            }
-            if (args.containsKey("page")) {
-                page = args.getInt("page")
-            }
+        } else {
+            link = args.getString("link")
+            if(args.containsKey("chapters"))
+                chaptersLinks = args.getStringArrayList("chapters")
         }
-
-        if (type == Utils.GROUPLE) {
-            val volAndChap = link!!.getVolAndChapter()
-            vol = volAndChap[0]
-            chapter = volAndChap[1]
-            supportActionBar?.title = "Глава " + vol + " – " + chapter + ". Страница " + (page + 1)
-        } else
-            supportActionBar?.title = "Страница: ${page + 1}"
 
         view_pager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener{
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
-                onPageScrolled(position)
+                if(onFirst){
+                    onPageSelectedAction(position)
+                    onFirst = false
+                }
             }
 
             override fun onPageSelected(position: Int) {
@@ -176,59 +136,74 @@ class ImageActivity : AppCompatActivity() {
 
         })
 
-        when {
-            online -> {
+        //when {
+        //    online -> {
                 progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleLarge)
                 val params = CoordinatorLayout.LayoutParams(100.getDPI(applicationContext), 100.getDPI(applicationContext))
                 params.gravity = Gravity.CENTER
                 rootView.addView(progressBar, params)
                 progressBar.visibility = View.VISIBLE
 
-                if (type == Utils.GROUPLE) {
-                    root = (Utils.cachePath + File.separator + "info/grouple"
-                            + File.separator + id)
+                if(fromBrowser){
+                    hentaiTask = HentaiOnlineImagesTask(link, mUser, mPass, savedInstanceState).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
+                }else if (type == Utils.GROUPLE) {
+                    gBookmarksBox = (application as App).boxStore.boxFor()
+                    gChaptersBox = (application as App).boxStore.boxFor()
+                    gBookmark = gBookmarksBox.get(id) ?: return
+                    gChapters = gBookmark.chapters.also { it.sortBy { chapter -> chapter.date } }
 
-                    val rootDir = File(root)
+                    currentGChapter = gChapters.getById(args.getLong("chapter_id")) ?: return
 
-                    if(rootDir.exists())
-                        rootDir.listFiles().forEach {
-                            paths[it.name.replace(".dat", "")] = it.absolutePath
+                    val prevChapIndex = gChapters.indexOfId(currentGChapter.id) - 1
+                    val nextChapIndex = gChapters.indexOfId(currentGChapter.id) + 1
+                    prevChapter = if (prevChapIndex >= 0) gChapters[prevChapIndex] else null
+                    nextChapter = if(nextChapIndex < gChapters.size) gChapters[nextChapIndex] else null
+
+                    page =  currentGChapter.page
+                    supportActionBar?.title = "Глава ${currentGChapter.vol} – ${currentGChapter.chap}. Страница ${page + 1}"
+
+                    if(currentGChapter.saved && currentGChapter.files != null && currentGChapter.files?.size ?: 0 > 0){
+                        val adapter = ImageAdapter(this, uiHelper, currentGChapter.files!!, gChaptersBox, type)
+                        view_pager.adapter = adapter
+
+                        if (savedInstanceState != null && savedInstanceState.containsKey("pos")) {
+                            view_pager.currentItem = savedInstanceState.getInt("pos")
+                        } else {
+                            view_pager.currentItem = adapter.count - page - 1
                         }
+                        progressBar.visibility = View.GONE
+                    }else
+                        groupleTask = GroupleOnlineImagesTask(currentGChapter.link, savedInstanceState).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
 
-                    groupleTask = GroupleOnlineImagesTask(link!!, savedInstanceState)
-                    groupleTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
                 } else {
-                    hentaiTask = HentaiOnlineImagesTask(link!!, mUser, mPass, savedInstanceState)
-                    hentaiTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
-                }
-                return
+                    hentaiBox = (application as App).boxStore.boxFor()
+                    currentHManga = hentaiBox.get(id) ?: return
+                    page = currentHManga.page
+                    hChapters = currentHManga.origin.target?.relateds.also { it?.sortBy { chapter -> chapter.date } }
 
-            }
-            type == Utils.GROUPLE -> {
-                root = (Utils.cachePath + File.separator + "info/grouple"
-                        + File.separator + id)
-
-                val rootDir = File(root)
-                if(rootDir.exists())
-                    rootDir.listFiles().forEach {
-                        paths[it.name.replace(".dat", "")] = it.absolutePath
+                    if(hChapters != null && hChapters!!.isNotEmpty()) {
+                        val prevChapIndex = hChapters!!.indexOfId(currentHManga.id) - 1
+                        val nextChapIndex = hChapters!!.indexOfId(currentHManga.id) + 1
+                        prevChapter = if (prevChapIndex >= 0) hChapters!![prevChapIndex] else null
+                        nextChapter = if (nextChapIndex < hChapters!!.size) hChapters!![nextChapIndex] else null
                     }
-                adapter = ImageAdapter(this, paths["$vol.$chapter"]!!, uiHelper, id!!)
-            }
-            else -> {
-                root = Utils.getHentaiInfoFile(id!!)
-                val linkImages = Utils.getSavedListFile(root)!!
-                adapter = ImageAdapter(this, uiHelper, linkImages, chapters, currentChapter, HentaiFragment.mUser, HentaiFragment.mPass)
-            }
-        }
 
-        view_pager!!.adapter = adapter
+                    supportActionBar?.title = "Страница: ${page + 1}"
 
-        if (savedInstanceState != null && savedInstanceState.containsKey("pos")) {
-            view_pager!!.currentItem = savedInstanceState.getInt("pos")
-        } else {
-            view_pager!!.currentItem = adapter.count - page - 1
-        }
+                    Log.d("lol", "saved and files: ${currentHManga.saved}/${currentHManga.files?.size}")
+                    if(currentHManga.saved && currentHManga.files != null){
+                        val adapter = ImageAdapter(this, uiHelper, currentHManga.files!!, hentaiBox, type)
+                        view_pager.adapter = adapter
+                        if (savedInstanceState != null && savedInstanceState.containsKey("pos")) {
+                            view_pager.currentItem = savedInstanceState.getInt("pos")
+                        } else {
+                            view_pager.currentItem = adapter.count - page - 1
+                        }
+                        progressBar.visibility = View.GONE
+                    }else
+                        hentaiTask = HentaiOnlineImagesTask(currentHManga.link, mUser, mPass, savedInstanceState).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
+
+                }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -240,31 +215,15 @@ class ImageActivity : AppCompatActivity() {
     }
 
     @SuppressLint("StaticFieldLeak")
-    internal inner class GroupleOnlineImagesTask(var link: String, private var savedInstanceState: Bundle?) : AsyncTask<Void, Void, Boolean>() {
-        private var nextChapter: String? = null
-        private var prevChapter: String? = null
+    internal inner class GroupleOnlineImagesTask(var link: String?, private var savedInstanceState: Bundle?) : AsyncTask<Void, Void, Boolean>() {
         private var images = ArrayList<String>()
 
         override fun doInBackground(vararg voids: Void): Boolean? {
 
             try {
-                val url = URL(link)
-                val protocol = url.protocol
-                val host = url.host
-
                 val mainPage = Jsoup.connect(link).data("mtr", "1").get()
-                val prevChapEl = mainPage.selectFirst("a.prevChapLink")
-                prevChapter = if (prevChapEl.text() == "Предыдущая глава") prevChapEl.attr("href") else null
-
                 val script = mainPage.selectFirst("script:containsData(rm_h.init)")
                 val content = script.html()
-                val pattern = Pattern.compile("var nextChapterLink = \"(.*)\";")
-                val matcher = pattern.matcher(content)
-                if (matcher.find()) {
-                    nextChapter = String.format("%s://%s%s", protocol, host, matcher.group(1)).replace("?mtr=1", "")
-                    if (nextChapter!!.contains("/list/like"))
-                        nextChapter = null
-                }
                 val rows = content.split("\\r?\\n".toRegex())
                 var needed = rows[rows.size - 1]
                 needed = needed.substring(needed.indexOf('[') + 1, needed.lastIndexOf(']'))
@@ -282,18 +241,21 @@ class ImageActivity : AppCompatActivity() {
             }
         }
 
-        override fun onPostExecute(aBoolean: Boolean?) {
-            if (aBoolean!!) {
+        override fun onPostExecute(aBoolean: Boolean) {
+            if (aBoolean) {
                 images.reverse()
-                val adapter = ImageAdapter(mContext, uiHelper, images,
-                        chapters, currentChapter, id!!)
-                view_pager!!.adapter = adapter
+                currentGChapter.page_all = images.size
+                gChaptersBox.put(currentGChapter)
+
+                val adapter = ImageAdapter(this@ImageActivity, uiHelper, images,
+                        gChaptersBox, type)
+                view_pager.adapter = adapter
                 uiHelper.delayHide(300)
 
                 if (savedInstanceState != null && savedInstanceState!!.containsKey("pos")) {
-                    view_pager!!.currentItem = savedInstanceState!!.getInt("pos")
+                    view_pager.currentItem = savedInstanceState!!.getInt("pos")
                 } else {
-                    view_pager!!.currentItem = adapter.count - page - 1
+                    view_pager.currentItem = adapter.count - page - 1
                 }
             } else
                 uiHelper.show()
@@ -309,7 +271,7 @@ class ImageActivity : AppCompatActivity() {
     }
 
     @SuppressLint("StaticFieldLeak")
-    internal inner class HentaiOnlineImagesTask(var link: String, var mUser: String, private var mPass: String, private var savedInstanceState: Bundle?) : AsyncTask<Void, Void, Boolean>() {
+    internal inner class HentaiOnlineImagesTask(var link: String?, var mUser: String, private var mPass: String, private var savedInstanceState: Bundle?) : AsyncTask<Void, Void, Boolean>() {
         private var images = ArrayList<String>()
 
         override fun doInBackground(vararg voids: Void): Boolean? {
@@ -337,11 +299,20 @@ class ImageActivity : AppCompatActivity() {
             }
         }
 
-        override fun onPostExecute(aBoolean: Boolean?) {
-            if (aBoolean!!) {
+        override fun onPostExecute(aBoolean: Boolean) {
+            if (aBoolean) {
                 images.reverse()
-                val adapter = ImageAdapter(mContext, uiHelper, images,
-                        chapters, currentChapter, mUser, mPass)
+
+                val adapter: ImageAdapter
+                if(!fromBrowser) {
+                    currentHManga.page_all = images.size
+                    hentaiBox.put(currentHManga)
+
+                    adapter = ImageAdapter(this@ImageActivity, uiHelper, images,
+                            hentaiBox, type)
+                }else
+                    adapter = ImageAdapter(this@ImageActivity, uiHelper, images)
+
                 view_pager.adapter = adapter
                 uiHelper.delayHide(300)
 
@@ -385,117 +356,60 @@ class ImageActivity : AppCompatActivity() {
                 page = adapter1.count - position - 1
                 supportActionBar?.title = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
-            if (position == 0)
-                adapter1.onZeroPos()
-        } else {
-            supportActionBar?.title = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
-            if (page < 0) {
-                link = link?.replace("\\d+/\\d+$".toRegex(), "$prevvol/$prevchapter")
-                currentChapter = chapters!!.indexOf(link!!)
-                page = adapter1.count - position - 1
-                supportActionBar?.title = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
-            }
-            if (adapter1.count > ImageAdapter.offset && position < ImageAdapter.offset) {
-                link = link?.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
-                currentChapter = chapters!!.indexOf(link!!)
-            }
-            if (position == 0) {
-                adapter1.onZeroPos()
-            }
-        }
-    }
 
-    @SuppressLint("SetTextI18n")
-    internal fun onPageScrolled(position: Int) {
-        val adapter1 = view_pager!!.adapter as? ImageAdapter ?: return
-        if (type == Utils.HENTAI && onFirst){
-            supportActionBar?.title = "Страница: ${page + 1}/${ImageAdapter.offset}"
+            if (position == 0) adapter1.onZeroPos()
+        } else {
+            supportActionBar?.title = "Глава ${currentGChapter.vol} – ${currentGChapter.chap}. Страница ${page + 1}/${ImageAdapter.offset}"
             if (page < 0) {
+                val prevVol = (prevChapter as GroupleChapter).vol
+                val prevChap = (prevChapter as GroupleChapter).chap
+
                 page = adapter1.count - position - 1
-                supportActionBar?.title = "Страница: ${page + 1}/${adapter1.count - ImageAdapter.offset}"
+                supportActionBar?.title = "Глава $prevVol – $prevChap. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
             }
-            if (position == 0)
-                adapter1.onZeroPos()
-        }else if (type == Utils.GROUPLE && onFirst) {
-            page = ImageAdapter.offset - position - 1
-            supportActionBar?.title = "Глава $vol – $chapter. Страница ${page + 1}/${ImageAdapter.offset}"
-            if (page < 0) {
-                link = link?.replace("\\d+/\\d+$".toRegex(), "$prevvol/$prevchapter")
-                currentChapter = chapters!!.indexOf(link!!)
-                page = adapter1.count - position - 1
-                supportActionBar?.title = "Глава $prevvol – $prevchapter. Страница ${page + 1}/${adapter1.count - ImageAdapter.offset}"
-            }
-            if (adapter1.count > ImageAdapter.offset && position < ImageAdapter.offset) {
-                link = link?.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
-                currentChapter = chapters!!.indexOf(link!!)
-            }
-            if (position == 0)
-                adapter1.onZeroPos()
+
+            if (position == 0 && nextChapter != null) adapter1.onZeroPos()
         }
-        onFirst = false
     }
 
     private fun ImageAdapter.onZeroPos() {
         if (type == Utils.GROUPLE) {
+            currentGChapter.page = page
+            currentGChapter.readed = true
+            gChaptersBox.put(currentGChapter)
 
-            val gChapter = gChapters.find { it.link == link }
-            if(gChapter != null) {
-                gChapter.page = page
-                gChapter.readed = true
-                gChaptersBox.put(gChapter)
+            prevChapter = currentGChapter
+            currentGChapter = nextChapter as GroupleChapter
+
+            val nextChapIndex = gChapters.indexOfId(currentGChapter.id) + 1
+            nextChapter = if(nextChapIndex < gChapters.size) gChapters[nextChapIndex] else null
+
+            if(currentGChapter.saved && currentGChapter.files != null){
+                this.nextChapter(currentGChapter.files!!)
+            }else{
+                this.nextChapterOnline(currentGChapter.link)
             }
+        } else if(type == Utils.HENTAI && hChapters != null && !fromBrowser){
+            currentHManga.readed = true
+            currentHManga.page = page
+            hentaiBox.put(currentHManga)
 
-            prevvol = vol
-            prevchapter = chapter
+            prevChapter = currentHManga
+            currentHManga = nextChapter as HentaiManga
 
-            if (paths["$vol." + (chapter + 1)] != null) {
-                chapter++
-                link = link?.replace("\\d+$".toRegex(), chapter.toString())
-                this.nextChapter(paths["$vol.$chapter"]!!)
-                currentChapter = chapters!!.indexOf(link!!)
-            } else if (paths["${vol + 1}.$chapter"] != null || paths["${vol + 1}.${chapter + 1}"] != null) {
-                vol++
-                if (paths["$vol.$chapter"] != null) {
-                    link = link?.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
-                    this.nextChapter(paths["$vol.$chapter"]!!)
-                } else if (paths["$vol.${chapter + 1}"] != null) {
-                    chapter++
-                    link = link?.replace("\\d+/\\d+$".toRegex(), "$vol/$chapter")
-                    this.nextChapter(paths["$vol.$chapter"]!!)
-                }
-                currentChapter = chapters!!.indexOf(link!!)
-            }else {
-                if (chapters!!.size > currentChapter + 1) {
-                    ImageAdapter.nextChapter = chapters!![currentChapter + 1]
-                    link = ImageAdapter.nextChapter
-                    val volAndChap = ImageAdapter.nextChapter!!.getVolAndChapter()
-                    vol = volAndChap[0]
-                    chapter = volAndChap[1]
-                    this.nextChapterOnline()
-                }
-                else
-                    ImageAdapter.nextChapter = null
+            val nextChapIndex = hChapters!!.indexOfId(currentHManga.id) + 1
+            nextChapter = if(nextChapIndex < hChapters!!.size) hChapters!![nextChapIndex] else null
+
+            if(currentHManga.saved && currentHManga.files != null){
+                this.nextChapter(currentHManga.files!!)
+            }else{
+                this.nextChapterOnline(currentHManga.link)
             }
-
-        } else if(type == Utils.HENTAI && ids != null){
-            if(!fromBrowser) {
-                val hentaiBox: Box<HentaiManga> = (application as App).boxStore.boxFor()
-                val hentaiManga = hentaiBox[id ?: return] ?: return
-                hentaiManga.readed = true
-                hentaiManga.page = page
-                hentaiBox.put(hentaiManga)
-            }
-
-            val nextCh = ids!!.indexOf(id!!) + 1
-            if(ids!!.size > nextCh) {
-                id = ids!![nextCh]
-                val infoFile = File(Utils.getHentaiInfoFile(id!!))
-                if (infoFile.exists()) {
-                    this.nextChapter(infoFile.absolutePath)
-                }else{
-                    ImageAdapter.nextChapter = chapters!![nextCh]
-                    this.nextChapterOnline()
-                }
+        } else if(type == Utils.HENTAI && fromBrowser && chaptersLinks != null){
+            val nextIndex = chaptersLinks!!.indexOf(link) + 1
+            if(nextIndex < chaptersLinks!!.size) {
+                link = chaptersLinks!![nextIndex]
+                this.nextChapterOnline(link!!)
             }
         }
     }
@@ -504,31 +418,37 @@ class ImageActivity : AppCompatActivity() {
         super.onResume()
         uiHelper.hide()
         if (ImageAdapter.opened) {
-            appBar.animate().alpha(0.0f).duration = 100
+            appBar.animate()
+                    .apply {
+                        alpha(0f)
+                        duration = 100
+                        startDelay = 100}
+
             ImageAdapter.opened = false
         }
     }
 
     override fun onPause() {
         super.onPause()
-        if (type == Utils.HENTAI && chapters != null && !fromBrowser && view_pager.currentItem < ImageAdapter.offset) {
-            val hentaiBox : Box<HentaiManga> = (application as App).boxStore.boxFor()
-            val hentaiManga = hentaiBox[ids?.get(ImageAdapter.currentChapter) ?: return] ?: return
+        if(fromBrowser) return
+
+        if (type == Utils.HENTAI && hChapters != null && hChapters?.isNotEmpty() == true && view_pager.currentItem < ImageAdapter.offset) {
+            val hentaiManga = hentaiBox[currentHManga.id]
             hentaiManga.page = page
             hentaiBox.put(hentaiManga)
-        } else if (type == Utils.GROUPLE && !fromBrowser && view_pager.currentItem < ImageAdapter.offset) {
-            val adapter = view_pager.adapter as? ImageAdapter ?: return
-
-            val curChap = adapter.gChapters.find { it.link == link } ?: return
-            curChap.page = page
-            adapter.gChaptersBox.put(curChap)
+        } else if (type == Utils.GROUPLE && view_pager.currentItem < ImageAdapter.offset) {
+            val gChapter = gChaptersBox[currentGChapter.id]
+            gChapter.page = page
+            gChaptersBox.put(gChapter)
         }
     }
 
     companion object {
+        private var mUser: String = HentaiFragment.mUser
+        private var mPass: String = HentaiFragment.mPass
+
         internal var fromBrowser = false
-        internal var vol: Int = 0
-        internal var chapter: Int = 0
-        internal var currentChapter: Int = 0
+        lateinit var currentGChapter: GroupleChapter
+        lateinit var currentHManga: HentaiManga
     }
 }

@@ -49,8 +49,7 @@ class HentaiFragment : Fragment() {
 
     private val refreshListener = SwipeRefreshLayout.OnRefreshListener {
         imageLoader?.stop()
-        mHentaiTask = HentaiTask(true, mUser, mPass, this@HentaiFragment)
-        mHentaiTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?)
+        mHentaiTask = HentaiTask(true, mUser, mPass, this@HentaiFragment).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?) }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -64,8 +63,8 @@ class HentaiFragment : Fragment() {
     }
 
     private fun showActivity() {
-        if (!isAdded)
-            return
+        if (!isAdded) return
+
         val shortAnimTime = resources.getInteger(android.R.integer.config_shortAnimTime)
         
         mangaCells.animate().setDuration(shortAnimTime.toLong()).alpha(1f)
@@ -236,8 +235,7 @@ class HentaiFragment : Fragment() {
                     val imageLinkHQ = imageLink.getHQThumbnail()
 
                     ids.add(id.toLong())
-                    val mangaItem = hentaiBox[id.toLong()] ?:
-                        HentaiManga(id = id.toLong(), title = title, link = baseLink, coverLink = imageLinkHQ, inFavs = true)
+                    val mangaItem = hentaiBox[id.toLong()] ?: HentaiManga(id = id.toLong(), title = title, link = baseLink, coverLink = imageLinkHQ, inFavs = true)
 
                     val chapPat = Pattern.compile("(глава\\s\\d+)|(часть\\s\\d+)", Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
                     val chapMat = chapPat.matcher(title)
@@ -245,8 +243,11 @@ class HentaiFragment : Fragment() {
                         mangaItem.hasChapters = true
 
                     hentaiBox.put(mangaItem)
+                    Log.d("lol", "${mangaItem.title} relateds: ${mangaItem.relateds.size}")
                 }
-                hentaiBox.query { notIn(HentaiManga_.id, ids.toLongArray()) }.remove()
+                hentaiBox.query {
+                    equal(HentaiManga_.inFavs, true)
+                    notIn(HentaiManga_.id, ids.toLongArray()) }.remove()
 
                 return true
             } catch (e: Exception) {
@@ -272,26 +273,17 @@ class HentaiFragment : Fragment() {
                         val adapter = mangaCells.adapter as? HentaiAdapter ?: return
                         val item = adapter.getItem(position)
 
+                        Log.d("lol", "${item.title} relateds: ${item.relateds.size}")
+
                         if (item.hasChapters) {
                             val intent = Intent(fragment!!.activity, HentaiChapters::class.java)
                             intent.putExtra("id", item.id)
                             intent.putExtra("link", item.link.replace("/online/", "/related/"))
-                            intent.putExtra("user", HentaiFragment.mUser)
-                            intent.putExtra("pass", HentaiFragment.mPass)
                             fragment!!.startActivity(intent)
                         } else {
                             val intent = Intent(fragment!!.activity, ImageActivity::class.java)
                             intent.putExtra("type", Utils.HENTAI)
-                            intent.putExtra("title", item.title)
-                            if (item.saved) {
-                                intent.putExtra("id", item.id)
-                                intent.putExtra("online", false)
-                            } else {
-                                intent.putExtra("link", item.link)
-                                intent.putExtra("online", true)
-                                intent.putExtra("user", HentaiFragment.mUser)
-                                intent.putExtra("pass", HentaiFragment.mPass)
-                            }
+                            intent.putExtra("id", item.id)
                             fragment!!.startActivity(intent)
                         }
                     }

@@ -296,11 +296,7 @@ class GroupleFragment : Fragment() {
 
                         val intent = Intent(fragment!!.activity, MangaChapters::class.java)
                         intent.putExtra("id", mangaItem.id)
-                        intent.putExtra("page", mangaItem.page)
-                        intent.putExtra("mangaTitle", mangaItem.title)
-                        intent.putExtra("baseLink", mangaItem.link)
-                        intent.putExtra("readedLink", mangaItem.readedLink)
-                        fragment!!.startActivity(intent)
+                        fragment?.startActivity(intent)
                     }
                 }
 

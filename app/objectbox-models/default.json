@@ -41,7 +41,7 @@
     },
     {
       "id": "2:1676386843907145064",
-      "lastPropertyId": "12:356823184856961531",
+      "lastPropertyId": "13:9086432975379150",
       "name": "GroupleChapter",
       "properties": [
         {
@@ -92,13 +92,17 @@
         {
           "id": "12:356823184856961531",
           "name": "date"
+        },
+        {
+          "id": "13:9086432975379150",
+          "name": "files"
         }
       ],
       "relations": []
     },
     {
       "id": "3:4397267029518351786",
-      "lastPropertyId": "14:2443885158759211977",
+      "lastPropertyId": "15:5725845972965175593",
       "name": "HentaiManga",
       "properties": [
         {
@@ -157,6 +161,10 @@
         {
           "id": "14:2443885158759211977",
           "name": "series"
+        },
+        {
+          "id": "15:5725845972965175593",
+          "name": "files"
         }
       ],
       "relations": []

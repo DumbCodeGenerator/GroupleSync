@@ -86,7 +86,8 @@ object Utils {
     }
 
     @Throws(Exception::class)
-    fun getPage(type: Byte?, user: String, pass: String, targetUri: String): Document {
+    fun getPage(type: Byte?, user: String, pass: String, targetUri: String?): Document {
+        targetUri ?: throw Exception("Ссылки нет")
         val u = URL(targetUri)
         val host = u.host
 

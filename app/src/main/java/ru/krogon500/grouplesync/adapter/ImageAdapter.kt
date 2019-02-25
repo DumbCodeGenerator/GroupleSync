@@ -23,109 +23,58 @@ import com.github.piasy.biv.loader.ImageLoader
 import com.github.piasy.biv.loader.glide.GlideImageLoader
 import com.github.piasy.biv.view.GlideImageViewFactory
 import io.objectbox.Box
-import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
-import io.objectbox.relation.ToMany
 import kotlinx.android.synthetic.main.image_activity.*
 import kotlinx.android.synthetic.main.image_fragment.view.*
 import org.jsoup.Jsoup
-import ru.krogon500.grouplesync.App
 import ru.krogon500.grouplesync.CustomProgressIndicator
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.activity.ImageActivity
-import ru.krogon500.grouplesync.entity.GroupleBookmark
 import ru.krogon500.grouplesync.entity.GroupleChapter
+import ru.krogon500.grouplesync.entity.GroupleChapter_
 import ru.krogon500.grouplesync.entity.HentaiManga
 import ru.krogon500.grouplesync.entity.HentaiManga_
+import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mPass
+import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mUser
 import ru.krogon500.grouplesync.system_helper.SystemUiHelper
 import java.io.File
-import java.net.URL
-import java.util.*
 import java.util.regex.Pattern
 
 
-class ImageAdapter : PagerAdapter {
-    private var chapters: ArrayList<String>? = null
-    private var count: Int = 0
-    lateinit var mUser: String
-    lateinit var mPass: String
+class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) : PagerAdapter() {
     private var filePaths = ArrayList<String>()
-    private val mContext: Context
+    private var count: Int = 0
+
     private val imageViewPos = SparseArray<ImageViewState>()
-    private val uiHelper: SystemUiHelper
+
     private lateinit var hentaiBox: Box<HentaiManga>
-    lateinit var gChaptersBox: Box<GroupleChapter>
-    lateinit var gChapters: ToMany<GroupleChapter>
+    private lateinit var gChaptersBox: Box<GroupleChapter>
 
-    constructor(mContext: Context, path: String, uiHelper: SystemUiHelper, bId: Long) {
-        this.mContext = mContext
-        this.uiHelper = uiHelper
-        ImageAdapter.type = Utils.GROUPLE
-
-        val gBookmark = ((mContext as Activity).application as App).boxStore.boxFor<GroupleBookmark>()[bId]
-        gChapters = gBookmark.chapters
-        gChaptersBox = (mContext.application as App).boxStore.boxFor()
-
+    init {
         BigImageViewer.initialize(GlideImageLoader.with(mContext))
+    }
 
-        val images = Utils.getSavedListFile(path) ?: return
-
+    constructor(mContext: Context, uiHelper: SystemUiHelper, images: List<String>): this(mContext, uiHelper) {
+        ImageAdapter.type = Utils.HENTAI
         ImageAdapter.offset = images.size
         count = ImageAdapter.offset
         filePaths.addAll(images)
     }
 
-    constructor(mContext: Context, uiHelper: SystemUiHelper, linkImages: ArrayList<String>, chapters: ArrayList<String>?, currentChapter: Int, user: String, pass: String) {
-        this.mContext = mContext
-        this.uiHelper = uiHelper
-        ImageAdapter.type = Utils.HENTAI
-        this.chapters = chapters
-        ImageAdapter.currentChapter = currentChapter
+    constructor(mContext: Context, uiHelper: SystemUiHelper, images: List<String>, box: Box<*>, type: Byte): this(mContext, uiHelper) {
+        ImageAdapter.type = type
 
-        if (chapters != null && chapters.size > currentChapter + 1)
-            ImageAdapter.nextChapter = chapters[currentChapter + 1]
-
-        BigImageViewer.initialize(GlideImageLoader.with(mContext))
-
-        mUser = user
-        mPass = pass
-        ImageAdapter.offset = linkImages.size
-        count = ImageAdapter.offset
-        filePaths = linkImages
-        if(chapters != null) {
-            hentaiBox = ((mContext as Activity).application as App).boxStore.boxFor()
-            val hentaiManga = hentaiBox.query{
-                equal(HentaiManga_.link, chapters[currentChapter])
-            }.findFirst() ?: return
-            hentaiManga.page_all = offset
-            hentaiBox.put(hentaiManga)
+        if(type == Utils.HENTAI) {
+            @Suppress("UNCHECKED_CAST")
+            this.hentaiBox = box as Box<HentaiManga>
+        }else{
+            @Suppress("UNCHECKED_CAST")
+            this.gChaptersBox = box as Box<GroupleChapter>
         }
-    }
-
-    constructor(mContext: Context, uiHelper: SystemUiHelper, linkImages: ArrayList<String>, chapters: ArrayList<String>?, currentChapter: Int, bId: Long) {
-        this.mContext = mContext
-        this.uiHelper = uiHelper
-        ImageAdapter.type = Utils.GROUPLE
-        this.chapters = chapters
-        ImageAdapter.currentChapter = currentChapter
-
-        if (chapters != null && chapters.size > currentChapter + 1)
-            ImageAdapter.nextChapter = chapters[currentChapter + 1]
-
-        BigImageViewer.initialize(GlideImageLoader.with(mContext))
-
-        ImageAdapter.offset = linkImages.size
+        ImageAdapter.offset = images.size
         count = ImageAdapter.offset
-        filePaths = linkImages
-        if(chapters != null) {
-            val gBookmark = ((mContext as Activity).application as App).boxStore.boxFor<GroupleBookmark>()[bId]
-            gChapters = gBookmark.chapters
-            gChaptersBox = (mContext.application as App).boxStore.boxFor()
-            val chapter = gChapters.find { it.link == chapters[currentChapter] } ?: return
-            chapter.page_all = offset
-            gChaptersBox.put(chapter)
-        }
+        filePaths.addAll(images)
     }
 
 
@@ -138,8 +87,7 @@ class ImageAdapter : PagerAdapter {
         notifyDataSetChanged()
     }
 
-    fun nextChapter(path: String) {
-        val nextChapterImg = Utils.getSavedListFile(path) ?: return
+    fun nextChapter(images: List<String>) {
         if (count > ImageAdapter.offset) {
             count = ImageAdapter.offset
 
@@ -147,51 +95,37 @@ class ImageAdapter : PagerAdapter {
                 filePaths.subList(ImageAdapter.offset, filePaths.size).clear()
             }
         }
-        ImageAdapter.offset = nextChapterImg.size
+        ImageAdapter.offset = images.size
         count += ImageAdapter.offset
 
-        filePaths.addAll(0, nextChapterImg)
+        filePaths.addAll(0, images)
         imageViewPos.clear()
         notifyDataSetChanged()
     }
 
-    fun nextChapterOnline() {
-        NextChapterOnline().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+    fun nextChapterOnline(link: String) {
+        NextChapterOnline(link).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
     }
 
     @SuppressLint("StaticFieldLeak")
-    private inner class NextChapterOnline : AsyncTask<Void, Void, Boolean>() {
+    private inner class NextChapterOnline(val link: String) : AsyncTask<Void, Void, Boolean>() {
         internal var tempLinks = ArrayList<String>()
 
         override fun doInBackground(vararg voids: Void): Boolean? {
             try {
-                ImageAdapter.nextChapter ?:
-                throw Exception("Дальше глав нет!")
-
                 if (ImageAdapter.type == Utils.GROUPLE) {
 
-                    currentChapter = chapters?.indexOf(nextChapter) ?: 0
-                    val url = URL(ImageAdapter.nextChapter)
-                    val protocol = url.protocol
-                    val host = url.host
+                    val mainPage = Jsoup.connect(link).data("mtr", "1").get()
 
-                    val mainPage = Jsoup.connect(ImageAdapter.nextChapter).data("mtr", "1").get()
                     val script = mainPage.selectFirst("script:containsData(rm_h.init)")
                     val content = script.html()
-                    val pattern = Pattern.compile("var nextChapterLink = \"(.*)\";")
-                    val matcher = pattern.matcher(content)
-                    if (matcher.find()) {
-                        ImageAdapter.nextChapter = String.format("%s://%s%s", protocol, host, matcher.group(1)).replace("?mtr=1", "")
-                        if (ImageAdapter.nextChapter!!.contains("/list/like"))
-                            ImageAdapter.nextChapter = null
-                    }
-                    val rows = content.split("\\r?\\n".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    val rows = content.split("\\r?\\n".toRegex())
                     var needed = rows[rows.size - 1]
                     needed = needed.substring(needed.indexOf('[') + 1, needed.lastIndexOf(']'))
-                    val parts = needed.split("],".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    val parts = needed.split("],")
                     for (part in parts) {
-                        val link = part.replace("[\\['\"\\]]".toRegex(), "").split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                        val ext = link[2].split("\\?".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+                        val link = part.replace("[\\['\"\\]]".toRegex(), "").split(",")
+                        val ext = link[2].split("\\?").first()
                         val img = link[1] + link[0] + ext
                         tempLinks.add(img)
                     }
@@ -199,14 +133,7 @@ class ImageAdapter : PagerAdapter {
                     if (!Utils.login(Utils.HENTAI, mUser, mPass))
                         return false
 
-                    val mainPage = Utils.getPage(Utils.HENTAI, mUser, mPass, nextChapter!!)
-
-                    currentChapter = chapters!!.indexOf(nextChapter!!)
-
-                    nextChapter = if (chapters!!.size > currentChapter + 1)
-                        chapters!![currentChapter + 1]
-                    else
-                        null
+                    val mainPage = Utils.getPage(Utils.HENTAI, mUser, mPass, link)
 
                     val script = mainPage.selectFirst("script:containsData(fullimg)")
                     val pattern = Pattern.compile("\"fullimg\":.+")
@@ -229,10 +156,8 @@ class ImageAdapter : PagerAdapter {
             return true
         }
 
-        override fun onPostExecute(aBoolean: Boolean?) {
-            super.onPostExecute(aBoolean)
-            // get a reference to the activity if it is still there
-            if (aBoolean!!) {
+        override fun onPostExecute(aBoolean: Boolean) {
+            if (aBoolean) {
                 if (count > ImageAdapter.offset) {
                     count = ImageAdapter.offset
                     if (filePaths.size > ImageAdapter.offset) {
@@ -241,13 +166,14 @@ class ImageAdapter : PagerAdapter {
                 }
                 ImageAdapter.offset = tempLinks.size
                 if(type == Utils.GROUPLE && !ImageActivity.fromBrowser) {
-                    val chapter = gChapters.find { it.link == chapters?.get(currentChapter) ?: "" }
+
+                    val chapter = gChaptersBox.query { equal(GroupleChapter_.link, link) }.findFirst()
                     if (chapter != null) {
                         chapter.page_all = offset
                         gChaptersBox.put(chapter)
                     }
                 }else if (!ImageActivity.fromBrowser){
-                    val hentaiChapter = hentaiBox.query { equal(HentaiManga_.link, chapters!![currentChapter])}.findFirst()
+                    val hentaiChapter = hentaiBox.query { equal(HentaiManga_.link, link)}.findFirst()
                     if(hentaiChapter != null) {
                         hentaiChapter.page_all = offset
                         hentaiBox.put(hentaiChapter)
@@ -377,7 +303,8 @@ class ImageAdapter : PagerAdapter {
                         }
 
                         override fun onImageLoadError(e: Exception) {
-
+                            Log.e("lol", e.message)
+                            e.printStackTrace(Utils.getPrintWriter())
                         }
 
                         override fun onTileLoadError(e: Exception) {
@@ -392,12 +319,15 @@ class ImageAdapter : PagerAdapter {
             }
 
             override fun onFail(error: Exception) {
-                Log.d("lol", error.localizedMessage)
+                //Log.e("lol", error.message)
+                error.printStackTrace()
+                error.printStackTrace(Utils.getPrintWriter())
                 // Image download failed
             }
         }
 
         bigImage.setImageLoaderCallback(myImageLoaderCallback)
+        Log.d("lol", "filepath: ${filePaths[position]}")
         bigImage.showImage(Uri.parse(filePaths[position]))
         if (filePaths.size < position + 1)
             BigImageViewer.prefetch(Uri.parse(filePaths[position + 1]))
@@ -409,10 +339,8 @@ class ImageAdapter : PagerAdapter {
 
     companion object {
         var offset: Int = 0
-        var currentChapter: Int = 0
         var opened: Boolean = false
         private var type: Byte = 0
-        var nextChapter: String? = null
     }
 
 }
