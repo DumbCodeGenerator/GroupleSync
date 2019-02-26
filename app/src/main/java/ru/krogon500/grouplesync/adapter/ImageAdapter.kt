@@ -23,18 +23,14 @@ import com.github.piasy.biv.loader.ImageLoader
 import com.github.piasy.biv.loader.glide.GlideImageLoader
 import com.github.piasy.biv.view.GlideImageViewFactory
 import io.objectbox.Box
-import io.objectbox.kotlin.query
 import kotlinx.android.synthetic.main.image_activity.*
 import kotlinx.android.synthetic.main.image_fragment.view.*
 import org.jsoup.Jsoup
 import ru.krogon500.grouplesync.CustomProgressIndicator
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.Utils
-import ru.krogon500.grouplesync.activity.ImageActivity
 import ru.krogon500.grouplesync.entity.GroupleChapter
-import ru.krogon500.grouplesync.entity.GroupleChapter_
 import ru.krogon500.grouplesync.entity.HentaiManga
-import ru.krogon500.grouplesync.entity.HentaiManga_
 import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mPass
 import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mUser
 import ru.krogon500.grouplesync.system_helper.SystemUiHelper
@@ -43,8 +39,10 @@ import java.util.regex.Pattern
 
 
 class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) : PagerAdapter() {
+    private var type: Byte = 0
     private var filePaths = ArrayList<String>()
     private var count: Int = 0
+    private var offset: Int = 0
 
     private val imageViewPos = SparseArray<ImageViewState>()
 
@@ -56,14 +54,15 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
     }
 
     constructor(mContext: Context, uiHelper: SystemUiHelper, images: List<String>): this(mContext, uiHelper) {
-        ImageAdapter.type = Utils.HENTAI
-        ImageAdapter.offset = images.size
-        count = ImageAdapter.offset
+        type = Utils.HENTAI
+        offset = images.size
+        currentRange = offset
+        count = offset
         filePaths.addAll(images)
     }
 
     constructor(mContext: Context, uiHelper: SystemUiHelper, images: List<String>, box: Box<*>, type: Byte): this(mContext, uiHelper) {
-        ImageAdapter.type = type
+        this.type = type
 
         if(type == Utils.HENTAI) {
             @Suppress("UNCHECKED_CAST")
@@ -72,8 +71,9 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
             @Suppress("UNCHECKED_CAST")
             this.gChaptersBox = box as Box<GroupleChapter>
         }
-        ImageAdapter.offset = images.size
-        count = ImageAdapter.offset
+        offset = images.size
+        currentRange = offset
+        count = offset
         filePaths.addAll(images)
     }
 
@@ -88,102 +88,114 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
     }
 
     fun nextChapter(images: List<String>) {
-        if (count > ImageAdapter.offset) {
-            count = ImageAdapter.offset
+        setFilepaths(images, false)
+    }
 
-            if (filePaths.size > ImageAdapter.offset) {
-                filePaths.subList(ImageAdapter.offset, filePaths.size).clear()
+    fun prevChapter(images: List<String>){
+        setFilepaths(images, true)
+    }
+
+    private fun backgroundOnlinePart(link: String, tempLinks: ArrayList<String>): Boolean{
+        if (type == Utils.GROUPLE) {
+
+            val mainPage = Jsoup.connect(link).data("mtr", "1").get()
+
+            val script = mainPage.selectFirst("script:containsData(rm_h.init)")
+            val content = script.html()
+            val rows = content.split("\\r?\\n".toRegex())
+            var needed = rows[rows.size - 1]
+            needed = needed.substring(needed.indexOf('[') + 1, needed.lastIndexOf(']'))
+            val parts = needed.split("],")
+            for (part in parts) {
+                val imgLink = part.replace("[\\['\"\\]]".toRegex(), "").split(",")
+                val ext = imgLink[2].split("\\?").first()
+                val img = imgLink[1] + imgLink[0] + ext
+                tempLinks.add(img)
+            }
+        } else {
+            if (!Utils.login(Utils.HENTAI, mUser, mPass))
+                return false
+
+            val mainPage = Utils.getPage(Utils.HENTAI, mUser, mPass, link)
+
+            val script = mainPage.selectFirst("script:containsData(fullimg)")
+            val pattern = Pattern.compile("\"fullimg\":.+")
+            val matcher = pattern.matcher(script.html())
+            if (matcher.find()) {
+                val needed = matcher.group(0).replace("\"fullimg\":", "")
+                val pattern2 = Pattern.compile("([\"|'])(\\\\?.)*?\\1")
+                val matcher2 = pattern2.matcher(needed)
+                while (matcher2.find()) {
+                    tempLinks.add(matcher2.group(0).replace("\"", "").replace("'", ""))
+                }
             }
         }
-        ImageAdapter.offset = images.size
-        count += ImageAdapter.offset
+        return true
+    }
 
-        filePaths.addAll(0, images)
+    private fun setFilepaths(images: Collection<String>, prevChapter: Boolean){
+        if (count > currentRange) {
+            if (filePaths.size > currentRange) {
+                if(prevChapter)
+                    filePaths.subList(0, currentRange).clear()
+                else
+                    filePaths.subList(currentRange, filePaths.size).clear()
+            }
+            count = filePaths.size
+            offset = if(prevChapter) -offset else images.size
+        }else {
+            offset = if (prevChapter) 0 else images.size
+        }
+        currentRange = if(prevChapter) count else images.size
+        count += images.size
+
+        if(prevChapter)
+            filePaths.addAll(images)
+        else
+            filePaths.addAll(0, images)
+
         imageViewPos.clear()
         notifyDataSetChanged()
     }
 
-    fun nextChapterOnline(link: String) {
-        NextChapterOnline(link).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+    fun nextChapterOnline(link: String, id: Long) {
+        NextChapterOnline(link, id, false).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+    }
+
+    fun prevChapterOnline(link: String, id: Long){
+        NextChapterOnline(link, id, true).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
     }
 
     @SuppressLint("StaticFieldLeak")
-    private inner class NextChapterOnline(val link: String) : AsyncTask<Void, Void, Boolean>() {
+    private inner class NextChapterOnline(val link: String, val id: Long, val prevChapter: Boolean) : AsyncTask<Void, Void, Boolean>() {
         internal var tempLinks = ArrayList<String>()
 
         override fun doInBackground(vararg voids: Void): Boolean? {
-            try {
-                if (ImageAdapter.type == Utils.GROUPLE) {
-
-                    val mainPage = Jsoup.connect(link).data("mtr", "1").get()
-
-                    val script = mainPage.selectFirst("script:containsData(rm_h.init)")
-                    val content = script.html()
-                    val rows = content.split("\\r?\\n".toRegex())
-                    var needed = rows[rows.size - 1]
-                    needed = needed.substring(needed.indexOf('[') + 1, needed.lastIndexOf(']'))
-                    val parts = needed.split("],")
-                    for (part in parts) {
-                        val link = part.replace("[\\['\"\\]]".toRegex(), "").split(",")
-                        val ext = link[2].split("\\?").first()
-                        val img = link[1] + link[0] + ext
-                        tempLinks.add(img)
-                    }
-                } else {
-                    if (!Utils.login(Utils.HENTAI, mUser, mPass))
-                        return false
-
-                    val mainPage = Utils.getPage(Utils.HENTAI, mUser, mPass, link)
-
-                    val script = mainPage.selectFirst("script:containsData(fullimg)")
-                    val pattern = Pattern.compile("\"fullimg\":.+")
-                    val matcher = pattern.matcher(script.html())
-                    if (matcher.find()) {
-                        val needed = matcher.group(0).replace("\"fullimg\":", "")
-                        val pattern2 = Pattern.compile("([\"|'])(\\\\?.)*?\\1")
-                        val matcher2 = pattern2.matcher(needed)
-                        while (matcher2.find()) {
-                            tempLinks.add(matcher2.group(0).replace("\"", "").replace("'", ""))
-                        }
-                    }
-                }
+            return try {
+                backgroundOnlinePart(link, tempLinks)
             } catch (e: Exception) {
                 Log.e("lol", e.localizedMessage)
                 e.printStackTrace(Utils.getPrintWriter())
-                return false
+                false
             }
-
-            return true
         }
 
         override fun onPostExecute(aBoolean: Boolean) {
             if (aBoolean) {
-                if (count > ImageAdapter.offset) {
-                    count = ImageAdapter.offset
-                    if (filePaths.size > ImageAdapter.offset) {
-                        filePaths.subList(ImageAdapter.offset, filePaths.size).clear()
-                    }
-                }
-                ImageAdapter.offset = tempLinks.size
-                if(type == Utils.GROUPLE && !ImageActivity.fromBrowser) {
-
-                    val chapter = gChaptersBox.query { equal(GroupleChapter_.link, link) }.findFirst()
+                if(type == Utils.GROUPLE && id > 0) {
+                    val chapter = gChaptersBox[id]
                     if (chapter != null) {
-                        chapter.page_all = offset
+                        chapter.page_all = tempLinks.size
                         gChaptersBox.put(chapter)
                     }
-                }else if (!ImageActivity.fromBrowser){
-                    val hentaiChapter = hentaiBox.query { equal(HentaiManga_.link, link)}.findFirst()
+                }else if (type == Utils.HENTAI && id > 0){
+                    val hentaiChapter = hentaiBox[id]
                     if(hentaiChapter != null) {
-                        hentaiChapter.page_all = offset
+                        hentaiChapter.page_all = tempLinks.size
                         hentaiBox.put(hentaiChapter)
                     }
                 }
-                count += ImageAdapter.offset
-                tempLinks.reverse()
-                filePaths.addAll(0, tempLinks)
-                imageViewPos.clear()
-                notifyDataSetChanged()
+                setFilepaths(tempLinks.reversed(), prevChapter)
             }
         }
     }
@@ -203,7 +215,7 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
     }
 
     override fun getItemPosition(`object`: Any): Int {
-        return (`object` as View).tag as Int + ImageAdapter.offset
+        return (`object` as View).tag as Int + offset
     }
 
     private fun imageClick(mContext: Context) {
@@ -319,15 +331,13 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
             }
 
             override fun onFail(error: Exception) {
-                //Log.e("lol", error.message)
+                // Image download failed
                 error.printStackTrace()
                 error.printStackTrace(Utils.getPrintWriter())
-                // Image download failed
             }
         }
 
         bigImage.setImageLoaderCallback(myImageLoaderCallback)
-        Log.d("lol", "filepath: ${filePaths[position]}")
         bigImage.showImage(Uri.parse(filePaths[position]))
         if (filePaths.size < position + 1)
             BigImageViewer.prefetch(Uri.parse(filePaths[position + 1]))
@@ -338,9 +348,8 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
     }
 
     companion object {
-        var offset: Int = 0
+        var currentRange: Int = 0
         var opened: Boolean = false
-        private var type: Byte = 0
     }
 
 }

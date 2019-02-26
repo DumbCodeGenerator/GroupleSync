@@ -217,9 +217,6 @@ class MangaChapters : AppCompatActivity() {
         gChaptersBox = (application as App).boxStore.boxFor()
         gChapters = gBookmark.chapters
 
-        //if(gChapters.isNotEmpty())
-        //   gChapters.sortByDescending { it.date }
-
         chaptersRefresh.setColorSchemeColors(ContextCompat.getColor(this, R.color.colorAccent))
         chaptersRefresh.isRefreshing = true
         chaptersRefresh.setOnRefreshListener { GetMangaInfo(gBookmark.link, gBookmark.readedLink, true, gBookmark.page).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?) }
@@ -320,7 +317,6 @@ class MangaChapters : AppCompatActivity() {
                 adapter.setDownload(index)
             }
         }
-        //adapter.notifyDataSetChanged()
     }
 
     private val onItemClickListener = object : OnItemClickListener{
@@ -330,8 +326,8 @@ class MangaChapters : AppCompatActivity() {
 
             if (adapter.isAllUnchecked) {
                 val intent = Intent(this@MangaChapters, ImageActivity::class.java)
-                intent.putExtra("id", bookmark_id)
-                intent.putExtra("chapter_id", adapter.getItem(position).id)
+                intent.putExtra("bookmark_id", bookmark_id)
+                intent.putExtra("id", adapter.getItem(position).id)
                 intent.putExtra("type", Utils.GROUPLE)
                 startActivity(intent)
             } else {
