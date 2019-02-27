@@ -54,6 +54,8 @@ class MangaChapters : AppCompatActivity() {
     internal lateinit var gChapters: ToMany<GroupleChapter>
     private var bookmark_id: Long = 0
     lateinit var layoutManager: LinearLayoutManager
+    private var visPos: Int = 0
+    private var setVisPos = false
 
     val listener = object : RecyclerView.OnScrollListener() {
         var isAnimated = false
@@ -111,8 +113,6 @@ class MangaChapters : AppCompatActivity() {
         }
     }
 
-    private var visPos: Int = 0
-
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     fun onUpdateEvent(event: UpdateEvent) {
         if (event.type != Utils.GROUPLE)
@@ -143,9 +143,11 @@ class MangaChapters : AppCompatActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
+        val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
         visPos = layoutManager.findFirstCompletelyVisibleItemPosition()
+        setVisPos = if(adapter.reversed) adapter.getLastReaded() > visPos else adapter.getLastReaded() < visPos
         outState.putInt("listPos", visPos)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
@@ -250,7 +252,11 @@ class MangaChapters : AppCompatActivity() {
         gChapters = GroupleFragment.groupleBookmarksBox[bookmark_id].chapters
         val adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
         adapter.update(gChapters)
-        layoutManager.scrollToPositionWithOffset(if(adapter.reversed) Math.max(visPos, adapter.getLastReaded()) else Math.min(visPos, adapter.getLastReaded()), chaptersList.height/2)
+        if(setVisPos){
+            layoutManager.scrollToPosition(visPos)
+        }else {
+            layoutManager.scrollToPositionWithOffset(adapter.getLastReaded(), chaptersList.height / 2)
+        }
     }
 
     fun onSelectAllClicked() {
@@ -505,10 +511,6 @@ class MangaChapters : AppCompatActivity() {
                     adapter = chaptersList.adapter as? MangaChaptersAdapter ?: return
                     adapter.update(gChapters)
                 }
-
-
-                if(!refresh)
-                    chaptersList.scrollToPosition(visPos)
 
                 selectAll.setOnClickListener { onSelectAllClicked() }
                 downloadSelected.setOnClickListener { onDownloadSelectedClicked() }

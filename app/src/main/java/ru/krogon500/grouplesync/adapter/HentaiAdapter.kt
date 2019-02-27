@@ -55,20 +55,19 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
         if(hentaiMangas.isEmpty()){
             hentaiMangas.addAll(newHentaiManga, false)
         }else{
-            val ids = ArrayList<Long>()
+            val newIDs = ArrayList<Long>()
+            newHentaiManga.forEach { newIDs.add(it.id) }
 
-            if(hentaiMangas.size < newHentaiManga.size) {
-                hentaiMangas.forEach { ids.add(it.id) }
-                newHentaiManga.forEachIndexed { index, hentaiManga ->
-                    if (hentaiManga.id !in ids)
-                        hentaiMangas.add(index, hentaiManga)
-                }
-            }else{
-                newHentaiManga.forEach { ids.add(it.id) }
-                hentaiMangas.removeAll(hentaiMangas.filter { it.id !in ids })
+            hentaiMangas.removeAll(hentaiMangas.filter { it.id !in newIDs })
+
+            val oldIDs = ArrayList<Long>()
+            hentaiMangas.forEach { oldIDs.add(it.id) }
+
+            newHentaiManga.forEachIndexed { index, hentaiManga ->
+                if(hentaiManga.id !in oldIDs)
+                    hentaiMangas.add(index, hentaiManga)
             }
         }
-
     }
 
 

@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
-import android.graphics.Point
 import android.graphics.PointF
 import android.net.Uri
 import android.os.AsyncTask
@@ -42,7 +41,6 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
     private var type: Byte = 0
     private var filePaths = ArrayList<String>()
     private var count: Int = 0
-    private var offset: Int = 0
 
     private val imageViewPos = SparseArray<ImageViewState>()
 
@@ -55,9 +53,8 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
 
     constructor(mContext: Context, uiHelper: SystemUiHelper, images: List<String>): this(mContext, uiHelper) {
         type = Utils.HENTAI
-        offset = images.size
-        currentRange = offset
-        count = offset
+        currentRange = images.size
+        count = currentRange
         filePaths.addAll(images)
     }
 
@@ -71,9 +68,8 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
             @Suppress("UNCHECKED_CAST")
             this.gChaptersBox = box as Box<GroupleChapter>
         }
-        offset = images.size
-        currentRange = offset
-        count = offset
+        currentRange = images.size
+        count = currentRange
         filePaths.addAll(images)
     }
 
@@ -136,15 +132,12 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
     private fun setFilepaths(images: Collection<String>, prevChapter: Boolean){
         if (count > currentRange) {
             if (filePaths.size > currentRange) {
-                if(prevChapter)
+                if (prevChapter)
                     filePaths.subList(0, currentRange).clear()
                 else
                     filePaths.subList(currentRange, filePaths.size).clear()
             }
             count = filePaths.size
-            offset = if(prevChapter) -offset else images.size
-        }else {
-            offset = if (prevChapter) 0 else images.size
         }
         currentRange = if(prevChapter) count else images.size
         count += images.size
@@ -159,15 +152,15 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
     }
 
     fun nextChapterOnline(link: String, id: Long) {
-        NextChapterOnline(link, id, false).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        GetChapterOnline(link, id, false).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
     }
 
     fun prevChapterOnline(link: String, id: Long){
-        NextChapterOnline(link, id, true).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+        GetChapterOnline(link, id, true).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
     }
 
     @SuppressLint("StaticFieldLeak")
-    private inner class NextChapterOnline(val link: String, val id: Long, val prevChapter: Boolean) : AsyncTask<Void, Void, Boolean>() {
+    private inner class GetChapterOnline(val link: String, val id: Long, val prevChapter: Boolean) : AsyncTask<Void, Void, Boolean>() {
         internal var tempLinks = ArrayList<String>()
 
         override fun doInBackground(vararg voids: Void): Boolean? {
@@ -215,7 +208,7 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
     }
 
     override fun getItemPosition(`object`: Any): Int {
-        return (`object` as View).tag as Int + offset
+        return filePaths.indexOf((`object` as View).tag)
     }
 
     private fun imageClick(mContext: Context) {
@@ -225,7 +218,7 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
                 override fun onAnimationStart(animation: Animator?) {
                     appBar.visibility = View.VISIBLE
                 }
-            }).duration = 100
+            }).duration = 150
             uiHelper.show()
             opened = true
         } else {
@@ -233,7 +226,7 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
                 override fun onAnimationEnd(animation: Animator?) {
                     appBar.visibility = View.GONE
                 }
-            }).duration = 100
+            }).duration = 150
             uiHelper.hide()
             opened = false
         }
@@ -254,7 +247,6 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
 
             override fun onCacheHit(imageType: Int, image: File) {
                 // Image was found in the cache
-                //Log.d("lol", "callback");
             }
 
             override fun onCacheMiss(imageType: Int, image: File) {
@@ -271,22 +263,17 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
 
             override fun onFinish() {
                 // Image download has finished
-                //Log.d("lol", "callback");
             }
 
             override fun onSuccess(image: File) {
                 // Image was retrieved successfully (either from cache or network)
-                //Log.d("lol", "callback wtf")
                 val imageView = iView.ssiv
 
                 if (imageView != null) {
-                    imageView.setMinimumTileDpi(160)
-
                     if (mContext.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT)
                         imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE)
                     else
                         imageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_START)
-
 
                     imageView.setOnImageEventListener(object : SubsamplingScaleImageView.OnImageEventListener {
                         override fun onReady() {
@@ -297,15 +284,11 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
                             imageView.setDoubleTapZoomDpi(80)
                             imageView.setDoubleTapZoomDuration(200)
                             imageView.isQuickScaleEnabled = false
-                            val display = (mContext as Activity).windowManager.defaultDisplay
-                            val size = Point()
-                            display.getSize(size)
-                            val width = size.x
 
                             if (imageViewPos.get(pos, null) != null) {
                                 val state = imageViewPos.get(pos)
                                 imageView.setScaleAndCenter(state.scale, state.center)
-                            }else if(imageView.sWidth < width){
+                            }else{
                                 imageView.setScaleAndCenter(1f, PointF(imageView.sWidth/2f, 0f))
                             }
                         }
@@ -342,7 +325,7 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
         if (filePaths.size < position + 1)
             BigImageViewer.prefetch(Uri.parse(filePaths[position + 1]))
 
-        view.tag = position
+        view.tag = filePaths[position]
         container.addView(view)
         return view
     }

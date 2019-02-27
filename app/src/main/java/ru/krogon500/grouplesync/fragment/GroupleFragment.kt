@@ -37,6 +37,7 @@ import ru.krogon500.grouplesync.activity.MangaChapters
 import ru.krogon500.grouplesync.adapter.GroupleAdapter
 import ru.krogon500.grouplesync.entity.GroupleBookmark
 import ru.krogon500.grouplesync.entity.GroupleBookmark_
+import ru.krogon500.grouplesync.entity.GroupleChapter
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import java.io.File
 import java.lang.ref.WeakReference
@@ -263,12 +264,18 @@ class GroupleFragment : Fragment() {
                     if(mangaItem == null)
                         mangaItem = GroupleBookmark(id, title, baseLink, imageLink, readedLink, page, isNew)
                     else{
+                        mangaItem.isNew = isNew
                         mangaItem.readedLink = readedLink
                         mangaItem.page = page
                     }
                     groupleBookmarksBox.put(mangaItem)
                 }
-                groupleBookmarksBox.query { notIn(GroupleBookmark_.id, ids.toLongArray()) }.remove()
+                val gChaptersBox: Box<GroupleChapter> = (fragment?.activity?.application as App).boxStore.boxFor()
+                val forDelete = groupleBookmarksBox.query { notIn(GroupleBookmark_.id, ids.toLongArray()) }.find()
+                forDelete.forEach {
+                    gChaptersBox.remove(it.chapters)
+                }
+                groupleBookmarksBox.remove(forDelete)
                 return !isCancelled
 
             } catch (e: Exception) {

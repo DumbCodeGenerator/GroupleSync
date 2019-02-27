@@ -245,9 +245,12 @@ class HentaiFragment : Fragment() {
                     hentaiBox.put(mangaItem)
                     Log.d("lol", "${mangaItem.title} relateds: ${mangaItem.relateds.size}")
                 }
-                hentaiBox.query {
+
+                val forDelete = hentaiBox.query {
                     equal(HentaiManga_.inFavs, true)
-                    notIn(HentaiManga_.id, ids.toLongArray()) }.remove()
+                    notIn(HentaiManga_.id, ids.toLongArray()) }.find()
+                forDelete.forEach { hentaiBox.remove(it.relateds) }
+                hentaiBox.remove(forDelete)
 
                 return true
             } catch (e: Exception) {
@@ -272,8 +275,6 @@ class HentaiFragment : Fragment() {
                     override fun onItemClick(view: View, position: Int) {
                         val adapter = mangaCells.adapter as? HentaiAdapter ?: return
                         val item = adapter.getItem(position)
-
-                        Log.d("lol", "${item.title} relateds: ${item.relateds.size}")
 
                         if (item.hasChapters) {
                             val intent = Intent(fragment!!.activity, HentaiChapters::class.java)

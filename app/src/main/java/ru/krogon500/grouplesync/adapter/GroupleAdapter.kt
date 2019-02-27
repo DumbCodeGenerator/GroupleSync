@@ -30,17 +30,17 @@ class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, priv
         if(groupleBookmarks.isEmpty()) {
             groupleBookmarks.addAll(newBookmarks, false)
         }else{
-            val ids = ArrayList<Long>()
+            val newIDs = ArrayList<Long>()
+            newBookmarks.forEach { newIDs.add(it.id) }
 
-            if(groupleBookmarks.size < newBookmarks.size){
-                groupleBookmarks.forEach { ids.add(it.id) }
-                newBookmarks.forEachIndexed { index, groupleBookmark ->
-                    if(groupleBookmark.id !in ids)
-                        groupleBookmarks.add(index, groupleBookmark)
-                }
-            }else{
-                newBookmarks.forEach { ids.add(it.id) }
-                groupleBookmarks.removeAll(groupleBookmarks.filter { it.id !in ids })
+            groupleBookmarks.removeAll(groupleBookmarks.filter { it.id !in newIDs })
+
+            val oldIDs = ArrayList<Long>()
+            groupleBookmarks.forEach { oldIDs.add(it.id) }
+
+            newBookmarks.forEachIndexed { index, groupleBookmark ->
+                if(groupleBookmark.id !in oldIDs)
+                    groupleBookmarks.add(index, groupleBookmark)
             }
         }
     }
