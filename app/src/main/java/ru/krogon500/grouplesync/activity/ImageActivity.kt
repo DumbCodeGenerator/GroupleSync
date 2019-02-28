@@ -351,7 +351,6 @@ class ImageActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     internal fun onPageSelectedAction(position: Int) {
-        Log.d("lol", "position: $position")
         val adapter = view_pager.adapter as? ImageAdapter ?: return
         page = ImageAdapter.currentRange - position - 1
         if (type == Utils.HENTAI) {
