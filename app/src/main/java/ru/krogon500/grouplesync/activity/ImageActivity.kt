@@ -56,6 +56,24 @@ class ImageActivity : AppCompatActivity() {
     private var groupleTask: GroupleOnlineImagesTask? = null
     private var hentaiTask: HentaiOnlineImagesTask? = null
 
+    private val pageListener = object : ViewPager.OnPageChangeListener{
+        override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
+            if(onFirst){
+                onPageSelectedAction(position)
+                onFirst = false
+            }
+        }
+
+        override fun onPageSelected(position: Int) {
+            onPageSelectedAction(position)
+        }
+
+        override fun onPageScrollStateChanged(state: Int) {
+
+        }
+
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt("pos", view_pager.currentItem)
@@ -151,6 +169,7 @@ class ImageActivity : AppCompatActivity() {
                     view_pager.currentItem = adapter.count - page - 1
                 }
                 progressBar.visibility = View.GONE
+                view_pager.addOnPageChangeListener(pageListener)
             }else
                 groupleTask = GroupleOnlineImagesTask(currentGChapter.link, savedInstanceState).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
 
@@ -169,7 +188,7 @@ class ImageActivity : AppCompatActivity() {
 
             supportActionBar?.title = "Страница: ${page + 1}"
 
-            Log.d("lol", "saved and files: ${currentHManga.saved}/${currentHManga.files?.size}")
+            //Log.d("lol", "saved and files: ${currentHManga.saved}/${currentHManga.files?.size}")
             if(currentHManga.saved && currentHManga.files != null){
                 val adapter = ImageAdapter(this, uiHelper, currentHManga.files!!, hentaiBox, type)
                 view_pager.adapter = adapter
@@ -179,28 +198,11 @@ class ImageActivity : AppCompatActivity() {
                     view_pager.currentItem = adapter.count - page - 1
                 }
                 progressBar.visibility = View.GONE
+                view_pager.addOnPageChangeListener(pageListener)
             }else
                 hentaiTask = HentaiOnlineImagesTask(currentHManga.link, mUser, mPass, savedInstanceState).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
 
         }
-
-        view_pager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener{
-            override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
-                if(onFirst){
-                    onPageSelectedAction(position)
-                    onFirst = false
-                }
-            }
-
-            override fun onPageSelected(position: Int) {
-                onPageSelectedAction(position)
-            }
-
-            override fun onPageScrollStateChanged(state: Int) {
-
-            }
-
-        })
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -260,6 +262,7 @@ class ImageActivity : AppCompatActivity() {
 
             progressBar.visibility = View.GONE
             groupleTask = null
+            view_pager.addOnPageChangeListener(pageListener)
         }
 
         override fun onCancelled() {
@@ -325,6 +328,7 @@ class ImageActivity : AppCompatActivity() {
 
             progressBar.visibility = View.GONE
             hentaiTask = null
+            view_pager.addOnPageChangeListener(pageListener)
         }
 
         override fun onCancelled() {
@@ -347,6 +351,7 @@ class ImageActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     internal fun onPageSelectedAction(position: Int) {
+        Log.d("lol", "position: $position")
         val adapter = view_pager.adapter as? ImageAdapter ?: return
         page = ImageAdapter.currentRange - position - 1
         if (type == Utils.HENTAI) {
@@ -371,11 +376,13 @@ class ImageActivity : AppCompatActivity() {
                 supportActionBar?.title = "Глава ${currentGChapter.vol} – ${currentGChapter.chap}. Страница ${page + 1}/${ImageAdapter.currentRange}"
             }
 
-            if (position == 0 && nextId > 0) adapter.onExtremePos(false) else if(position == adapter.count - 1 && prevId > 0) adapter.onExtremePos(true)
+            if (position == 0) adapter.onExtremePos(false) else if(position == adapter.count - 1 && prevId > 0) adapter.onExtremePos(true)
         }
     }
     
-    private fun setNextId(){
+    private fun setNextId(): Boolean{
+        if(nextId == 0L) return false
+
         prevId = id
         id = nextId
 
@@ -385,6 +392,7 @@ class ImageActivity : AppCompatActivity() {
         } else{
             if(nextChapIndex < hChapters!!.size) hChapters!![nextChapIndex].id else 0
         }
+        return true
     }
     
     private fun setPrevId(){
@@ -404,6 +412,7 @@ class ImageActivity : AppCompatActivity() {
         if (type == Utils.GROUPLE) {
             val currentGChapter = if(prevChapter) {
                 if(this.count > ImageAdapter.currentRange) setPrevId()
+                if(prevId == 0L) return
                 gChaptersBox[prevId] ?: return
             }else {
                 val readedGChapter = gChaptersBox[id] ?: return
@@ -411,7 +420,7 @@ class ImageActivity : AppCompatActivity() {
                 readedGChapter.readed = true
                 gChaptersBox.put(readedGChapter)
 
-                setNextId()
+                if(!setNextId()) return
                 gChaptersBox[id] ?: return
             }
 
@@ -467,11 +476,11 @@ class ImageActivity : AppCompatActivity() {
         if(fromBrowser) return
 
         if (type == Utils.HENTAI && hChapters != null && hChapters?.isNotEmpty() == true) {
-            val hentaiManga = (if(view_pager.currentItem < ImageAdapter.currentRange) hentaiBox[id] else hentaiBox[prevId]) ?: return
+            val hentaiManga = (if(view_pager.currentItem < ImageAdapter.currentRange && id > 0) hentaiBox[id] else if(prevId > 0) hentaiBox[prevId] else null) ?: return
             hentaiManga.page = page
             hentaiBox.put(hentaiManga)
         } else if (type == Utils.GROUPLE) {
-            val gChapter = (if(view_pager.currentItem < ImageAdapter.currentRange) gChaptersBox[id] else gChaptersBox[prevId]) ?: return
+            val gChapter = (if(view_pager.currentItem < ImageAdapter.currentRange && id > 0) gChaptersBox[id] else if(prevId > 0) gChaptersBox[prevId] else null) ?: return
             gChapter.page = page
             gChaptersBox.put(gChapter)
         }

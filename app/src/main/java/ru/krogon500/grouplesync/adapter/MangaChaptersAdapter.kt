@@ -97,8 +97,7 @@ class MangaChaptersAdapter(private val mContext: Context,
         }
 
     fun update(chapterItems: ToMany<GroupleChapter>){
-        this.gChapters = chapterItems
-        this.gChapters.sortByDescending { it.date }
+        this.gChapters = chapterItems.also { it.sortByDescending { chapter -> chapter.date } }
         notifyDataSetChanged()
     }
 

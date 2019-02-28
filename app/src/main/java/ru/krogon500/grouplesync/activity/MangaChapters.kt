@@ -147,12 +147,14 @@ class MangaChapters : AppCompatActivity() {
         visPos = layoutManager.findFirstCompletelyVisibleItemPosition()
         setVisPos = if(adapter.reversed) adapter.getLastReaded() > visPos else adapter.getLastReaded() < visPos
         outState.putInt("listPos", visPos)
+        outState.putBoolean("setVP", setVisPos)
         super.onSaveInstanceState(outState)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle?) {
         super.onRestoreInstanceState(savedInstanceState)
         visPos = savedInstanceState?.getInt("listPos") ?: 0
+        setVisPos = savedInstanceState?.getBoolean("setVP") ?: false
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
