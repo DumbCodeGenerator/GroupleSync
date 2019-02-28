@@ -29,4 +29,8 @@ class RecyclerArray<T:ICoverSettable>(private val adapter: RecyclerView.Adapter<
         adapter.notifyItemRemoved(index)
         return super.removeAt(index)
     }
+    fun swap(data: Collection<T>){
+        super.clear()
+        this.addAll(data, false)
+    }
 }

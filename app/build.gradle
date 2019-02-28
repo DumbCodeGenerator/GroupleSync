@@ -6,11 +6,6 @@ apply plugin: "kotlin-noarg"
 apply plugin: 'io.objectbox'
 
 android {
-    configurations.all {
-        resolutionStrategy {
-            force "com.android.support:support-v4:28.0.0"
-        }
-    }
     signingConfigs {
         signed_release {
             keyAlias 'bl00dyspinner'
@@ -23,15 +18,12 @@ android {
         annotation("io.objectbox.annotation.Entity")
     }
     compileSdkVersion 28
-    //buildToolsVersion "28.0.3"
-    //useLibrary 'org.apache.http.legacy'
     defaultConfig {
         applicationId "ru.krogon500.grouplesync"
         minSdkVersion 15
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
-        //testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {

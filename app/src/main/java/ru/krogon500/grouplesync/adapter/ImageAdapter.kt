@@ -288,7 +288,7 @@ class ImageAdapter(val mContext: Context, private val uiHelper: SystemUiHelper) 
                             if (imageViewPos.get(pos, null) != null) {
                                 val state = imageViewPos.get(pos)
                                 imageView.setScaleAndCenter(state.scale, state.center)
-                            }else{
+                            }else if(imageView.sWidth * imageView.maxScale < imageView.width){
                                 imageView.setScaleAndCenter(1f, PointF(imageView.sWidth/2f, 0f))
                             }
                         }
