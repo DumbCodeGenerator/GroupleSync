@@ -7,8 +7,10 @@ import android.graphics.BitmapFactory
 import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
-import android.view.*
-import android.widget.AdapterView
+import android.view.LayoutInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -24,7 +26,6 @@ import io.objectbox.Box
 import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
 import kotlinx.android.synthetic.main.fragment.*
-import org.jsoup.Connection
 import ru.krogon500.grouplesync.App
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.SpacesItemDecoration
@@ -37,6 +38,7 @@ import ru.krogon500.grouplesync.entity.HentaiManga
 import ru.krogon500.grouplesync.entity.HentaiManga_
 import ru.krogon500.grouplesync.image_loaders.HentaiImageLoader
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
+import ru.krogon500.grouplesync.interfaces.RequestListener
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.*
@@ -46,6 +48,26 @@ import java.util.regex.Pattern
 class HentaiFragment : Fragment() {
     
     private var mHentaiTask: HentaiTask? = null
+
+    private val requestListener = object : RequestListener{
+        override fun onComplete(item: Any?) {
+            if (item !is HentaiManga) return
+            val adapter = mangaCells.adapter as? HentaiAdapter ?: return
+            Toast.makeText(activity, "Удалено из избранного", Toast.LENGTH_SHORT).show()
+            val inCache = DiskCacheUtils.findInCache(item.coverLink, imageLoader!!.diskCache)
+            adapter.remove(item)
+
+            if (inCache.exists())
+                inCache.delete()
+
+            swipeRefresh!!.isRefreshing = true
+            refreshListener.onRefresh()
+        }
+
+        override fun onFail(e: Exception) {
+            Toast.makeText(activity, e.localizedMessage, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private val refreshListener = SwipeRefreshLayout.OnRefreshListener {
         imageLoader?.stop()
@@ -120,59 +142,14 @@ class HentaiFragment : Fragment() {
             mHentaiTask!!.cancel(true)
     }
 
-    override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo?) {
-        menu.add(Menu.NONE, 32, 0, "Удалить")
-    }
-
     override fun onContextItemSelected(item: MenuItem): Boolean {
-        val menuInfo = item.menuInfo as AdapterView.AdapterContextMenuInfo
-        val mangaItem = (mangaCells.adapter as HentaiAdapter).getItem(menuInfo.position)
+        val adapter = mangaCells.adapter as? HentaiAdapter ?: return false
+        val position = adapter.selectedItem ?: return false
+        val mangaItem = adapter.getItem(position)
         when (item.itemId) {
-            32 -> RequestTask(mangaItem.id.toString(), mangaItem.coverLink).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+            32 -> Utils.HentaiRequestTask(mangaItem.id, Utils.HENTAI_DELETE_ACTION, requestListener, mangaItem).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
         }
         return super.onContextItemSelected(item)
-    }
-
-    @Suppress("StaticFieldLeak")
-    private inner class RequestTask internal constructor(internal var id: String, internal var coverLink: String) : AsyncTask<Void, Void, Boolean>() {
-        internal var data = HashMap<String, String>()
-        internal lateinit var error: String
-
-        init {
-            data["do"] = "favorites"
-            data["doaction"] = "del"
-            data["id"] = id
-        }
-
-
-        override fun doInBackground(vararg voids: Void): Boolean? {
-            return try {
-                Utils.makeRequest(Utils.HENTAI, mUser, mPass, Utils.hentaiBase + "/index.php", data, Connection.Method.GET)
-                //true
-            } catch (e: Exception) {
-                Log.e("GroupleSync", e.localizedMessage)
-                error = e.localizedMessage
-                e.printStackTrace(Utils.getPrintWriter())
-                false
-            }
-
-        }
-
-        override fun onPostExecute(aBoolean: Boolean?) {
-            if (aBoolean!!) {
-                Toast.makeText(activity, "Удалено из избранного", Toast.LENGTH_SHORT).show()
-                val inCache = DiskCacheUtils.findInCache(coverLink, imageLoader!!.diskCache)
-                hentaiBox.remove(id.toLong())
-
-                if (inCache.exists())
-                    inCache.delete()
-
-                swipeRefresh!!.isRefreshing = true
-                refreshListener.onRefresh()
-            } else {
-                Toast.makeText(activity, error, Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     private class HentaiTask internal constructor(private val refresh: Boolean, private val mUser: String, private val mPass: String, context: HentaiFragment, private val fragmentReference: WeakReference<HentaiFragment> = WeakReference(context)) : AsyncTask<Void, Void, Boolean>() {

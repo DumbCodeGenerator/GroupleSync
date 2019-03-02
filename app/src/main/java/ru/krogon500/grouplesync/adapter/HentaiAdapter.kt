@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 import android.util.SparseArray
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -32,6 +33,7 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
     
     private var hentaiMangas = RecyclerArray<HentaiManga>(this, HentaiFragment.imageLoader)
     private val progresses = SparseArray<ProgressArray>()
+    var selectedItem: Int? = null
 
     internal inner class ProgressArray(var max: Int, var current: Int)
 
@@ -44,7 +46,7 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MangaCellsViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.cellgrid, parent, false)
-        return MangaCellsViewHolder(itemView, listener)
+        return MangaCellsViewHolder(itemView, listener, View.OnCreateContextMenuListener { menu, _, _ ->  menu.add(Menu.NONE, 32, 0, "Удалить")})
     }
 
     fun Box<HentaiManga>.init(){
@@ -75,10 +77,12 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
         return hentaiMangas.size
     }
 
-    /*fun remove(pos: Int) {
-        hentaiBookmarksBox.remove(hentaiMangas[pos])
-        notifyDataSetChanged()
-    }*/
+    fun remove(item: HentaiManga) {
+        hentaiBookmarksBox.remove(item)
+        val pos = hentaiMangas.indexOf(item)
+        hentaiMangas.removeAt(pos)
+        notifyItemRemoved(pos)
+    }
 
     @Subscribe(sticky = true, threadMode = ThreadMode.MAIN)
     fun onUpdateEvent(event: UpdateEvent) {
@@ -138,6 +142,10 @@ class HentaiAdapter(private val ctx: Context, private var hentaiBookmarksBox: Bo
 
     override fun onBindViewHolder(holder: MangaCellsViewHolder, position: Int) {
         val item = hentaiMangas[position]
+        holder.itemView.setOnLongClickListener {
+            selectedItem = position
+            false
+        }
         holder.textView.text = item.title
 
         if (item.cover != null)

@@ -23,7 +23,6 @@ import com.nostra13.universalimageloader.core.DisplayImageOptions
 import com.nostra13.universalimageloader.core.ImageLoader
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration
 import kotlinx.android.synthetic.main.hbrowser_act.*
-import org.jsoup.Connection
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.Utils
 import ru.krogon500.grouplesync.Utils.getHQThumbnail
@@ -35,11 +34,9 @@ import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mPass
 import ru.krogon500.grouplesync.fragment.HentaiFragment.Companion.mUser
 import ru.krogon500.grouplesync.image_loaders.HentaiBrowserImageLoader
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
+import ru.krogon500.grouplesync.interfaces.RequestListener
 import ru.krogon500.grouplesync.items.MangaItem
-import java.util.*
 import java.util.regex.Pattern
-import kotlin.collections.ArrayList
-import kotlin.collections.LinkedHashMap
 
 
 class HentaiBrowser : AppCompatActivity() {
@@ -65,7 +62,7 @@ class HentaiBrowser : AppCompatActivity() {
             val key = adapter.getItem(position)
             if (seriesLinks.containsKey(key)) {
                 curPage = 0
-                hTask = HentaiBrowse(mUser, mPass, seriesLinks[key]!!, firstPage = true, series = true)
+                hTask = HentaiBrowse(mUser, mPass, seriesLinks[key]!!, firstPage = true)
                 hTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
                 browseList.adapter = null
                 browser_fab.hideView()
@@ -83,6 +80,17 @@ class HentaiBrowser : AppCompatActivity() {
             intent.putExtra("link", mangaItem.link)
             startActivity(intent)
         }
+    }
+
+    private val requestListener = object : RequestListener{
+        override fun onComplete(item: Any?) {
+            Toast.makeText(applicationContext, "Добавлено в избранное", Toast.LENGTH_SHORT).show()
+        }
+
+        override fun onFail(e: Exception) {
+            Toast.makeText(applicationContext, e.localizedMessage, Toast.LENGTH_SHORT).show()
+        }
+
     }
 
 
@@ -359,7 +367,7 @@ class HentaiBrowser : AppCompatActivity() {
         val adapter = browseList.adapter as? HBrowserAdapter ?: return false
         val position = adapter.selectedItem ?: return false
         val mangaItem = adapter.getItem(position)
-        Log.d("lol", "position and id: $position/${mangaItem.id}")
+
         when (item.itemId) {
             1 -> {
                 if (mangaItem.haveChapters) {
@@ -371,43 +379,9 @@ class HentaiBrowser : AppCompatActivity() {
                 }
                 return true
             }
-            2 -> RequestTask(mangaItem.id).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+            2 -> Utils.HentaiRequestTask(mangaItem.id, Utils.HENTAI_ADD_ACTION, requestListener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
         }
         return super.onContextItemSelected(item)
-    }
-
-    @SuppressLint("StaticFieldLeak")
-    private inner class RequestTask internal constructor(id: Long) : AsyncTask<Void, Void, Boolean>() {
-        internal var data = HashMap<String, String>()
-        internal var error: String = ""
-
-        init {
-            data["do"] = "favorites"
-            data["doaction"] = "add"
-            data["id"] = id.toString()
-        }
-
-
-        override fun doInBackground(vararg voids: Void): Boolean? {
-            return try {
-                Utils.makeRequest(Utils.HENTAI, mUser, mPass, Utils.hentaiBase + "/index.php", data, Connection.Method.GET)
-                true
-            } catch (e: Exception) {
-                Log.e("GroupleSync", e.localizedMessage)
-                error = e.localizedMessage
-                e.printStackTrace(Utils.getPrintWriter())
-                false
-            }
-
-        }
-
-        override fun onPostExecute(aBoolean: Boolean?) {
-            if (aBoolean!!) {
-                Toast.makeText(applicationContext, "Добавлено в избранное", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(applicationContext, error, Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     @SuppressLint("StaticFieldLeak")
@@ -450,7 +424,7 @@ class HentaiBrowser : AppCompatActivity() {
     }
 
     @SuppressLint("StaticFieldLeak")
-    internal inner class HentaiBrowse(var mUser: String, var mPass: String, var link: String, private var firstPage: Boolean, private var series: Boolean = false): AsyncTask<Void, Void, Boolean>() {
+    internal inner class HentaiBrowse(var mUser: String, var mPass: String, var link: String, private var firstPage: Boolean): AsyncTask<Void, Void, Boolean>() {
         private val mangaItems = ArrayList<MangaItem>()
 
         override fun doInBackground(vararg voids: Void): Boolean {
@@ -512,8 +486,8 @@ class HentaiBrowser : AppCompatActivity() {
             hTask = null
 
             if (aBoolean) {
-                if (browseList!!.visibility != View.VISIBLE)
-                    browseList!!.visibility = View.VISIBLE
+                if (browseList.visibility != View.VISIBLE)
+                    browseList.visibility = View.VISIBLE
 
                 if(browseList.adapter == null) {
                     val adapter = HBrowserAdapter(data = mangaItems, addFooter = pages.size > 0 && pages.size > curPage, listener = browserListener)

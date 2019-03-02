@@ -26,6 +26,10 @@
         android:title="@string/sync"
         myApp:showAsAction="never" />
     <item
+        android:id="@+id/planed"
+        android:title="@string/planed"
+        myApp:showAsAction="never" />
+    <item
         android:id="@+id/update"
         android:icon="@android:drawable/stat_notify_sync_noanim"
         android:visible="false"

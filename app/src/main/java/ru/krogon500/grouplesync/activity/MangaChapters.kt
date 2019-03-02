@@ -28,7 +28,6 @@ import kotlinx.android.synthetic.main.manga_chapters.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
-import org.jsoup.Connection
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.TextNode
@@ -42,10 +41,9 @@ import ru.krogon500.grouplesync.entity.GroupleChapter
 import ru.krogon500.grouplesync.event.UpdateEvent
 import ru.krogon500.grouplesync.fragment.GroupleFragment
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
+import ru.krogon500.grouplesync.interfaces.RequestListener
 import java.io.File
-import java.net.MalformedURLException
 import java.net.URL
-import java.util.*
 import java.util.regex.Pattern
 
 class MangaChapters : AppCompatActivity() {
@@ -56,6 +54,16 @@ class MangaChapters : AppCompatActivity() {
     lateinit var layoutManager: LinearLayoutManager
     private var visPos: Int = 0
     private var setVisPos = false
+
+    private val requestListener = object : RequestListener{
+        override fun onComplete(item: Any?) {
+            Toast.makeText(applicationContext, "Закладка обновлена", Toast.LENGTH_SHORT).show()
+        }
+
+        override fun onFail(e: Exception) {
+            Toast.makeText(applicationContext, "Не удалось обновить закладку. ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val listener = object : RecyclerView.OnScrollListener() {
         var isAnimated = false
@@ -169,7 +177,7 @@ class MangaChapters : AppCompatActivity() {
                 val readed = adapter.getLastReaded()
                 val chapterItem = adapter.getItem(readed)
                 Log.d("lol", "sync item: ${chapterItem.link}")
-                AddBookmarkTask(chapterItem.link, chapterItem.page).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?)
+                Utils.UpdateBookmarkTask(chapterItem, requestListener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
                 return true
             }
 
@@ -343,67 +351,6 @@ class MangaChapters : AppCompatActivity() {
             }
         }
 
-    }
-
-    @SuppressLint("StaticFieldLeak")
-    private inner class AddBookmarkTask internal constructor(private val link: String, private val page: Int) : AsyncTask<Void, Void, Boolean>() {
-        private lateinit var host: String
-        private var vol: Int = 0
-        private var chapter: Int = 0
-
-        init {
-            try {
-                val url = URL(link)
-                host = String.format("%s://%s", url.protocol, url.host)
-                val volandchap = link.getVolAndChapter()
-                vol = volandchap[0]
-                chapter = volandchap[1]
-            } catch (e: MalformedURLException) {
-                Toast.makeText(applicationContext, "Неверная ссылка", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        override fun doInBackground(vararg voids: Void): Boolean? {
-            val mangaId: Int
-            try {
-                val chapterPage = Jsoup.connect(link).data("mtr", "1").get()
-                mangaId = chapterPage.selectFirst("span.bookmark-menu").attr("data-id").toInt()
-            } catch (e: Exception) {
-                Log.e("lol", e.localizedMessage)
-                return false
-            }
-
-            val user = GroupleFragment.mUser
-            val pass = GroupleFragment.mPass
-            val data = HashMap<String, String>()
-            if (mangaId <= 0)
-                return false
-            data["id"] = mangaId.toString()
-            data["type"] = ""
-            data["status"] = "WATCHING"
-            data["vol"] = vol.toString()
-            data["num"] = chapter.toString()
-            data["page"] = page.toString()
-            return try {
-                gBookmark.readedLink = link
-                gBookmark.page = page
-                GroupleFragment.groupleBookmarksBox.put(gBookmark)
-                Utils.makeRequest(Utils.GROUPLE, user, pass, host + Utils.groupleAdd, data, Connection.Method.POST)
-            } catch (e: Exception) {
-                Log.e("lol", e.localizedMessage)
-                e.printStackTrace(Utils.getPrintWriter())
-                false
-            }
-
-        }
-
-        override fun onPostExecute(success: Boolean) {
-            if (success) {
-                Toast.makeText(applicationContext, "Закладка обновлена", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(applicationContext, "Не удалось обновить закладку", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     @SuppressLint("StaticFieldLeak")

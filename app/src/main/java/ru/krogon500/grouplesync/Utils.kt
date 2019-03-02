@@ -11,6 +11,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.graphics.Color
 import android.graphics.drawable.ShapeDrawable
+import android.os.AsyncTask
 import android.os.Build
 import android.os.Environment
 import android.text.Html
@@ -28,10 +29,19 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.main_act2.*
+import org.jsoup.Connection
 import org.jsoup.Connection.Method
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
-import java.io.*
+import ru.krogon500.grouplesync.entity.GroupleChapter
+import ru.krogon500.grouplesync.entity.HentaiManga
+import ru.krogon500.grouplesync.fragment.GroupleFragment
+import ru.krogon500.grouplesync.fragment.HentaiFragment
+import ru.krogon500.grouplesync.interfaces.RequestListener
+import java.io.File
+import java.io.IOException
+import java.io.PrintWriter
+import java.net.MalformedURLException
 import java.net.URL
 import java.text.DateFormat
 import java.util.*
@@ -46,12 +56,16 @@ object Utils {
 
     var grouplePath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "GroupleSync" + File.separator + "manga"
     var groupleAdd = "/internal/ajax/addBookmark"
-    var groupleDelete = "$groupleBase/private/change"
+    var groupleChange = "$groupleBase/private/change"
     private const val groupleError = "https://grouple.co/internal/auth/login?login_error=1"
+    const val GROUPLE_COMPLETE_ACTION = "COMPLETED"
+    const val GROUPLE_WATCHING_ACTION = "WATCHING"
 
     var hentaiPath = Environment.getExternalStorageDirectory().absolutePath + File.separator + "GroupleSync" + File.separator + "hentai"
     var hentaiBase = "http://henchan.me"
     private var imgHentaiBase = "http://img2.henchan.me"
+    const val HENTAI_ADD_ACTION = "add"
+    const val HENTAI_DELETE_ACTION = "del"
 
     private var allCookies: HashMap<String, Map<String, String>> = HashMap()
 
@@ -276,6 +290,115 @@ object Utils {
         }
     }
 
+    class HentaiRequestTask(id: Long, action: String, var listener: RequestListener?, private val callbackItem: HentaiManga? = null) : AsyncTask<Void, Void, Boolean>() {
+        internal var data = java.util.HashMap<String, String>()
+        private lateinit var error: Exception
+
+        init {
+            data["do"] = "favorites"
+            data["doaction"] = action
+            data["id"] = id.toString()
+        }
+
+
+        override fun doInBackground(vararg voids: Void): Boolean? {
+            return try {
+                Utils.makeRequest(Utils.HENTAI, HentaiFragment.mUser, HentaiFragment.mPass, Utils.hentaiBase + "/index.php", data, Connection.Method.GET)
+            } catch (e: Exception) {
+                Log.e("GroupleSync", e.localizedMessage)
+                error = e
+                e.printStackTrace(Utils.getPrintWriter())
+                false
+            }
+        }
+
+        override fun onPostExecute(aBoolean: Boolean) {
+            if (aBoolean) {
+                listener?.onComplete(callbackItem)
+            } else {
+                listener?.onFail(error)
+            }
+        }
+    }
+
+    class UpdateBookmarkTask(private val chapterItem: GroupleChapter, val listener: RequestListener?) : AsyncTask<Void, Void, Boolean>() {
+        private lateinit var host: String
+        private lateinit var error: Exception
+
+        init {
+            try {
+                val url = URL(chapterItem.link)
+                host = "${url.protocol}://${url.host}"
+            } catch (e: MalformedURLException) {
+                error = e
+            }
+        }
+
+        override fun doInBackground(vararg voids: Void): Boolean {
+            val mangaId: Int
+            try {
+                val chapterPage = Jsoup.connect(chapterItem.link).data("mtr", "1").get()
+                mangaId = chapterPage.selectFirst("span.bookmark-menu").attr("data-id").toInt()
+            } catch (e: Exception) {
+                Log.e("lol", e.localizedMessage)
+                error = e
+                return false
+            }
+
+            val user = GroupleFragment.mUser
+            val pass = GroupleFragment.mPass
+            val data = java.util.HashMap<String, String>()
+            if (mangaId <= 0)
+                return false
+            data["id"] = mangaId.toString()
+            data["type"] = ""
+            data["status"] = "WATCHING"
+            data["vol"] = chapterItem.vol.toString()
+            data["num"] = chapterItem.chap.toString()
+            data["page"] = chapterItem.page.toString()
+            return try {
+                Utils.makeRequest(Utils.GROUPLE, user, pass, host + Utils.groupleAdd, data, Connection.Method.POST)
+            } catch (e: Exception) {
+                Log.e("lol", e.localizedMessage)
+                e.printStackTrace(Utils.getPrintWriter())
+                error = e
+                false
+            }
+        }
+
+        override fun onPostExecute(result: Boolean) {
+            if(result){
+                listener?.onComplete(null)
+            }else{
+                listener?.onFail(error)
+            }
+        }
+    }
+
+    class BookmarkTask(private val id: Long, private val action: String, private val listener: RequestListener?): AsyncTask<Void, Void, Boolean>() {
+
+        override fun doInBackground(vararg voids: Void): Boolean? {
+            val data = java.util.HashMap<String, String>()
+            data["id"] = id.toString()
+            data["status"] = action
+            return try {
+                Utils.makeRequest(Utils.GROUPLE, GroupleFragment.mUser, GroupleFragment.mPass, Utils.groupleChange, data, Connection.Method.POST)
+            } catch (e: Exception) {
+                e.printStackTrace(Utils.getPrintWriter())
+                Log.e("GroupleSync", e.localizedMessage)
+                listener?.onFail(e)
+                false
+            }
+
+        }
+
+        override fun onPostExecute(success: Boolean) {
+            if (success) {
+                listener?.onComplete(null)
+            }
+        }
+    }
+
     /*@Suppress("Deprecation")
     fun Context?.isConnected(): Boolean {
         val cm = this?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -320,42 +443,6 @@ object Utils {
             }
         }
         return false
-    }
-
-    fun getSavedListFile(filename: String): ArrayList<String>? {
-        val savedArrayList: ArrayList<String>?
-        val file = File(filename)
-        if (!file.exists()) {
-            Log.i("lol", "Файла с инфой нет")
-            return null
-        }
-
-        val fileInputStream = FileInputStream(file)
-        val objectInputStream = ObjectInputStream(fileInputStream)
-
-        @Suppress("UNCHECKED_CAST")
-        savedArrayList = objectInputStream.readObject() as ArrayList<String>
-
-        objectInputStream.close()
-        fileInputStream.close()
-
-        return savedArrayList
-    }
-
-    fun saveListFile(files : ArrayList<String>, filepath: String, filename: String){
-        val dir = File("$cachePath/info/$filepath")
-        if(!dir.exists())
-            dir.mkdirs()
-
-        val file = File(dir.absolutePath + File.separator + filename)
-        Log.i("lol", file.absolutePath)
-        val fileOutputStream = FileOutputStream(file)
-        val objectOutputStream = ObjectOutputStream(fileOutputStream)
-
-        objectOutputStream.writeObject(files)
-        objectOutputStream.close()
-        fileOutputStream.close()
-        Log.i("lol", "Размер файла с инфо: " + file.length())
     }
 
     fun getHentaiInfoFile(id: Long) : String{

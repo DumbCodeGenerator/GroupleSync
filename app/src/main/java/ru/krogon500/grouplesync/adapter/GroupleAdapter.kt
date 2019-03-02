@@ -1,6 +1,7 @@
 package ru.krogon500.grouplesync.adapter
 
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -14,12 +15,17 @@ import ru.krogon500.grouplesync.holder.MangaCellsViewHolder
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import java.text.Collator
 
-class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, private var listener: OnItemClickListener?) : RecyclerView.Adapter<MangaCellsViewHolder>() {
-
+class GroupleAdapter(private var listener: OnItemClickListener?) : RecyclerView.Adapter<MangaCellsViewHolder>() {
     private var groupleBookmarks = RecyclerArray<GroupleBookmark>(this, GroupleFragment.imageLoader)
+    private var groupleBookmarksBox: Box<GroupleBookmark>? = null
+    var selectedItem: Int? = null
 
-    init {
+    constructor(groupleBookmarksBox: Box<GroupleBookmark>, listener: OnItemClickListener?): this(listener){
         groupleBookmarksBox.init()
+    }
+
+    constructor(data: Collection<GroupleBookmark>, listener: OnItemClickListener?): this(listener){
+        groupleBookmarks.addAll(data, false)
     }
 
     fun Box<GroupleBookmark>.init(){
@@ -48,7 +54,10 @@ class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, priv
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MangaCellsViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.cellgrid, parent, false)
-        return MangaCellsViewHolder(itemView, listener)
+        return MangaCellsViewHolder(itemView, listener, View.OnCreateContextMenuListener { menu, _, _ ->
+            menu.add(Menu.NONE, 1, 0, "Убрать в \"Прочитанное\"")
+            menu.add(Menu.NONE, 2, 0, "Перенести в \"Читаемое\"")
+        })
     }
 
     override fun getItemCount(): Int {
@@ -58,6 +67,10 @@ class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, priv
     override fun onBindViewHolder(holder: MangaCellsViewHolder, position: Int) {
         val item = groupleBookmarks[position]
 
+        holder.itemView.setOnLongClickListener {
+            selectedItem = position
+            false
+        }
         holder.textView.text = item.title
 
         if (item.cover != null)
@@ -76,14 +89,20 @@ class GroupleAdapter(private var groupleBookmarksBox: Box<GroupleBookmark>, priv
 
 
     fun remove(pos: Int) {
-        groupleBookmarksBox.remove(groupleBookmarks[pos])
-        notifyDataSetChanged()
+        groupleBookmarksBox?.remove(groupleBookmarks[pos])
+        groupleBookmarks.removeAt(pos)
+        notifyItemRemoved(pos)
     }
 
     fun update(groupleBookmarksBox: Box<GroupleBookmark>) {
         this.groupleBookmarksBox = groupleBookmarksBox
         groupleBookmarksBox.init()
         //notifyDataSetChanged()
+    }
+
+    fun update(data: Collection<GroupleBookmark>){
+        groupleBookmarks.swap(data)
+        notifyDataSetChanged()
     }
 
     fun getItem(position: Int): GroupleBookmark{

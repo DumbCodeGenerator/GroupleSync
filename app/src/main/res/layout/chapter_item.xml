@@ -14,13 +14,13 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="5dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginRight="8dp"
+        android:layout_marginRight="75dp"
         android:ellipsize="end"
         android:maxLines="4"
         android:padding="5sp"
         android:textColor="@android:color/background_light"
         android:textSize="18sp"
-        app:layout_constraintEnd_toStartOf="@+id/download"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/selected"
         app:layout_constraintTop_toTopOf="parent" />
 

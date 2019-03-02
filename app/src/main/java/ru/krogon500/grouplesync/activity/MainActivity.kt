@@ -31,6 +31,7 @@ import ru.krogon500.grouplesync.service.UpdateService
 
 class MainActivity : AppCompatActivity() {
     private var mOptionsMenu: Menu? = null
+    private lateinit var fragmentAdapter: FragmentAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun start() {
-        val fragmentAdapter = FragmentAdapter(supportFragmentManager, PreferenceManager.getDefaultSharedPreferences(this))
+        fragmentAdapter = FragmentAdapter(supportFragmentManager, PreferenceManager.getDefaultSharedPreferences(this))
 
         pager.adapter = fragmentAdapter
         tabs.setupWithViewPager(pager)
@@ -83,8 +84,10 @@ class MainActivity : AppCompatActivity() {
                 if (mOptionsMenu != null) {
                     val hBrowser = mOptionsMenu!!.findItem(R.id.hBrowser)
                     val sync = mOptionsMenu!!.findItem(R.id.sync)
+                    val planed = mOptionsMenu!!.findItem(R.id.planed)
                     hBrowser.isVisible = tab.position != 0
-                    sync.isVisible = tab.position != 1
+                    sync.isVisible = tab.position == 0
+                    planed.isVisible = tab.position == 0
                 }
             }
 
@@ -129,6 +132,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onBackPressed() {
+        val groupleFragment = fragmentAdapter.getItem(pager.currentItem) as? GroupleFragment ?: return super.onBackPressed()
+        when {
+            groupleFragment.mGetPlanedBookmarksTask != null -> groupleFragment.mGetPlanedBookmarksTask!!.cancel(true)
+            groupleFragment.mGetPlanedBookmarksTask == null && groupleFragment.gotPlaned -> groupleFragment.getWatchingBookmarks()
+            else -> super.onBackPressed()
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
         menu.findItem(R.id.update).isVisible = true
@@ -139,8 +151,10 @@ class MainActivity : AppCompatActivity() {
         mOptionsMenu = menu
         val hBrowser = menu.findItem(R.id.hBrowser)
         val sync = menu.findItem(R.id.sync)
+        val planed = menu.findItem(R.id.planed)
         hBrowser.isVisible = tabs.selectedTabPosition != 0
-        sync.isVisible = tabs.selectedTabPosition != 1
+        sync.isVisible = tabs.selectedTabPosition == 0
+        planed.isVisible = tabs.selectedTabPosition == 0
         return true
     }
 
@@ -164,6 +178,14 @@ class MainActivity : AppCompatActivity() {
                     startService(service)
                 }
                 return true
+            }
+            R.id.planed -> {
+                if(tabs!!.selectedTabPosition == 0){
+                    val groupleFragment = fragmentAdapter.getItem(pager.currentItem) as? GroupleFragment ?: return false
+                    if(groupleFragment.isVisible){
+                        groupleFragment.getPlanedBookmarks()
+                    }
+                }
             }
             R.id.logout -> {
                 val mSettings = PreferenceManager.getDefaultSharedPreferences(applicationContext)

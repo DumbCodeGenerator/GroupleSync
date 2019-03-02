@@ -1,18 +1,16 @@
 package ru.krogon500.grouplesync.fragment
 
-import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.AsyncTask
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.*
+import android.view.LayoutInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
-import android.widget.AdapterView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -28,7 +26,6 @@ import io.objectbox.kotlin.boxFor
 import io.objectbox.kotlin.query
 import kotlinx.android.synthetic.main.fragment.*
 import kotlinx.android.synthetic.main.main_act2.*
-import org.jsoup.Connection
 import ru.krogon500.grouplesync.App
 import ru.krogon500.grouplesync.R
 import ru.krogon500.grouplesync.SpacesItemDecoration
@@ -39,15 +36,37 @@ import ru.krogon500.grouplesync.entity.GroupleBookmark
 import ru.krogon500.grouplesync.entity.GroupleBookmark_
 import ru.krogon500.grouplesync.entity.GroupleChapter
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
+import ru.krogon500.grouplesync.interfaces.RequestListener
 import java.io.File
 import java.lang.ref.WeakReference
-import java.util.*
-import kotlin.collections.ArrayList
 
 class GroupleFragment : Fragment() {
 
 
-    private var mGetBookmarksTask: GetBookmarksTask? = null
+    private var mGetWatchingBookmarksTask: GetWatchingBookmarksTask? = null
+    internal var mGetPlanedBookmarksTask: GetPlanedBookmarksTask? = null
+    internal var gotPlaned = false
+    private val cacheDir = File("${Utils.cachePath}/covers")
+
+    private val completeRequestListener = object : RequestListener{
+        override fun onComplete(item: Any?) {
+            Toast.makeText(context, "Закладка убрана в \"Прочитанное\"", Toast.LENGTH_SHORT).show()
+        }
+
+        override fun onFail(e: Exception) {
+            Toast.makeText(context, e.localizedMessage, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val watchingRequestListener = object : RequestListener{
+        override fun onComplete(item: Any?) {
+            Toast.makeText(context, "Закладка перенесена в \"Читаемое\"", Toast.LENGTH_SHORT).show()
+        }
+
+        override fun onFail(e: Exception) {
+            Toast.makeText(context, e.localizedMessage, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(
@@ -69,8 +88,21 @@ class GroupleFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        if (Build.VERSION.SDK_INT >= 23 && activity?.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 123)
+        if (!cacheDir.exists())
+            cacheDir.mkdirs()
+
+        if (!imageLoader.isInited) {
+
+            val options = DisplayImageOptions.Builder()
+                    .cacheOnDisk(true)
+                    .bitmapConfig(Bitmap.Config.RGB_565)
+                    .build()
+            val config = ImageLoaderConfiguration.Builder(context)
+                    .defaultDisplayImageOptions(options)
+                    .denyCacheImageMultipleSizesInMemory()
+                    .diskCache(UnlimitedDiskCache(cacheDir))
+                    .build()
+            imageLoader.init(config)
         }
 
         groupleBookmarksBox = (activity?.application as App).boxStore.boxFor()
@@ -88,36 +120,32 @@ class GroupleFragment : Fragment() {
 
         val refreshListener : SwipeRefreshLayout.OnRefreshListener? = SwipeRefreshLayout.OnRefreshListener {
             imageLoader.stop()
-            mGetBookmarksTask = GetBookmarksTask(mUser, mPass, true, this)
-            mGetBookmarksTask?.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) ?: return@OnRefreshListener}
+            mGetWatchingBookmarksTask = GetWatchingBookmarksTask(true, this).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
+        }
 
         swipeRefresh.setOnRefreshListener(refreshListener)
 
-        mGetBookmarksTask = GetBookmarksTask(mUser, mPass, false, this)
-        mGetBookmarksTask?.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) ?: return
+        mGetWatchingBookmarksTask = GetWatchingBookmarksTask(false, this).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
 
-        if (mGetBookmarksTask != null)
-            mGetBookmarksTask!!.cancel(true)
-    }
+        if (mGetWatchingBookmarksTask != null)
+            mGetWatchingBookmarksTask!!.cancel(true)
 
-    override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo?) {
-        super.onCreateContextMenu(menu, v, menuInfo)
-        menu.add(Menu.NONE, 1, 0, "Удалить")
+        if(mGetPlanedBookmarksTask != null)
+            mGetPlanedBookmarksTask!!.cancel(true)
     }
 
     override fun onContextItemSelected(item: MenuItem): Boolean {
-        val menuInfo = item.menuInfo as AdapterView.AdapterContextMenuInfo
+        val adapter = mangaCells.adapter as? GroupleAdapter ?: return false
+        val position = adapter.selectedItem ?: return false
         when (item.itemId) {
             1 -> {
-                val adapter = mangaCells.adapter as? GroupleAdapter ?: return false
-
-                val info = adapter.getItem(menuInfo.position)
-                val id = info.id
-                val cover = DiskCacheUtils.findInCache(info.coverLink, imageLoader.diskCache)
+                val bookmark = adapter.getItem(position)
+                val id = bookmark.id
+                val cover = DiskCacheUtils.findInCache(bookmark.coverLink, imageLoader.diskCache)
                 if (cover.exists()) {
                     val coverRen = File(cover.absolutePath + System.currentTimeMillis())
                     cover.renameTo(coverRen)
@@ -127,12 +155,18 @@ class GroupleFragment : Fragment() {
                     else
                         Log.d("lol", "hueta kakaya-to")
                 }
-                adapter.remove(menuInfo.position)
+                adapter.remove(position)
 
-                DeleteBookmarkTask(id.toString()).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null as Void?)
+                Utils.BookmarkTask(id, Utils.GROUPLE_COMPLETE_ACTION, completeRequestListener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
                 val mangaDir = File(Utils.grouplePath + File.separator + "b" + id)
                 if (mangaDir.exists())
                     mangaDir.deleteRecursively()
+                return true
+            }
+            2 ->{
+                val bookmark = adapter.getItem(position)
+                Utils.BookmarkTask(bookmark.id, Utils.GROUPLE_WATCHING_ACTION, watchingRequestListener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+                return true
             }
         }
         return super.onContextItemSelected(item)
@@ -144,32 +178,6 @@ class GroupleFragment : Fragment() {
         val shortAnimTime = resources.getInteger(android.R.integer.config_shortAnimTime)
 
         mangaCells.animate().setDuration(shortAnimTime.toLong()).alpha(1f)
-    }
-
-    @SuppressLint("StaticFieldLeak")
-    private inner class DeleteBookmarkTask internal constructor(private val id: String): AsyncTask<Void, Void, Boolean>() {
-
-        override fun doInBackground(vararg voids: Void): Boolean? {
-            val data = HashMap<String, String>()
-            data["id"] = id
-            data["status"] = "DROPPED"
-            return try {
-                Utils.makeRequest(Utils.GROUPLE, mUser, mPass, Utils.groupleDelete, data, Connection.Method.POST)
-            } catch (e: Exception) {
-                e.printStackTrace(Utils.getPrintWriter())
-                Log.e("GroupleSync", e.localizedMessage)
-                false
-            }
-
-        }
-
-        override fun onPostExecute(success: Boolean) {
-            if (success) {
-                Toast.makeText(activity, "Закладка с сайта успешно удалена", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(activity, "Не удалось удалить закладку с сайта", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     /*private class SearchTask internal constructor(private val queryLink: String) : AsyncTask<Void, Void, Boolean>() {
@@ -187,8 +195,115 @@ class GroupleFragment : Fragment() {
         }
     }*/
 
-    private class GetBookmarksTask internal constructor(private val mUser: String, private val mPass: String, private val refresh: Boolean,
-                                                        context: GroupleFragment, val cacheDir: File = File(Utils.cachePath + File.separator + "covers")) : AsyncTask<Void, Void, Boolean>() {
+    fun getPlanedBookmarks(){
+        mangaCells.adapter = null
+        swipeRefresh.isRefreshing = true
+        mGetPlanedBookmarksTask = GetPlanedBookmarksTask(this).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
+    }
+
+    internal class GetPlanedBookmarksTask(context: GroupleFragment) : AsyncTask<Void, Void, Boolean>() {
+        private var fragmentWeakReference: WeakReference<GroupleFragment> = WeakReference(context)
+        internal var fragment: GroupleFragment? = null
+        private val planedBookmarks = ArrayList<GroupleBookmark>()
+
+        override fun onPreExecute() {
+            fragment = fragmentWeakReference.get()
+            if (fragment == null) {
+                cancel(true)
+                return
+            }
+        }
+
+        override fun doInBackground(vararg voids: Void): Boolean? {
+            try {
+                if (!Utils.login(Utils.GROUPLE, mUser, mPass))
+                    return false
+                val doc = Utils.getPage(Utils.GROUPLE, mUser, mPass, Utils.groupleBase + "/private/bookmarks?status=PLANED")
+                val table = doc.selectFirst("table.table-hover > tbody")
+                val rows = table.children()
+                rows.forEach {
+                    if (isCancelled)
+                        return false
+
+                    val screenshot = it.select("td[width=850] > a.screenshot").first()
+
+                    val title = screenshot.attr("title")
+
+                    val id = it.attr("id").replace("b", "").toLongOrNull() ?: 0
+
+                    val imageLink = screenshot.attr("rel")
+
+                    val baseLink = it.selectFirst("a.site-element").attr("href")
+
+                    val isNew = it.select("span.manga-updated").size == 1
+
+                    val mangaItem = GroupleBookmark(id, title, baseLink, imageLink, "", 0, isNew)
+                    planedBookmarks.add(mangaItem)
+                }
+                return !isCancelled
+
+            } catch (e: Exception) {
+                Log.e("lol", e.localizedMessage)
+                e.printStackTrace()
+                e.printStackTrace(Utils.getPrintWriter())
+                return false
+            }
+
+        }
+
+        override fun onPostExecute(aBoolean: Boolean) {
+            super.onPostExecute(aBoolean)
+
+            if (fragment == null)
+                return
+
+            fragment?.showActivity()
+            fragment?.swipeRefresh?.isRefreshing = false
+            fragment?.swipeRefresh?.isEnabled = false
+            fragment?.mGetPlanedBookmarksTask = null
+
+            if (aBoolean) {
+                val listener = object : OnItemClickListener {
+                    override fun onItemClick(view: View, position: Int) {
+                        val adapter = fragment?.mangaCells?.adapter as? GroupleAdapter ?: return
+                        val mangaItem = adapter.getItem(position)
+
+                        val intent = Intent(fragment!!.activity, MangaChapters::class.java)
+                        intent.putExtra("id", mangaItem.id)
+                        fragment?.startActivity(intent)
+                    }
+                }
+                fragment?.mangaCells?.adapter = GroupleAdapter(planedBookmarks, listener)
+                fragment?.gotPlaned = true
+            }
+        }
+
+
+        override fun onCancelled() {
+            if (fragment == null)
+                return
+
+            imageLoader.stop()
+            fragment?.mGetPlanedBookmarksTask = null
+            fragment?.swipeRefresh?.isEnabled = true
+            fragment?.swipeRefresh?.isRefreshing = false
+            fragment?.swipeRefresh?.isRefreshing = true
+
+            fragment?.mGetWatchingBookmarksTask = GetWatchingBookmarksTask(false, fragment!!).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
+
+            //fragment?.showActivity()
+        }
+    }
+
+    fun getWatchingBookmarks(){
+        gotPlaned = false
+        mangaCells.adapter = null
+        swipeRefresh.isEnabled = true
+        swipeRefresh.isRefreshing = true
+        mGetWatchingBookmarksTask = GetWatchingBookmarksTask(false, this).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
+    }
+
+    private class GetWatchingBookmarksTask(private val refresh: Boolean, context: GroupleFragment) : AsyncTask<Void, Void, Boolean>() {
         internal var fragmentWeakReference: WeakReference<GroupleFragment> = WeakReference(context)
         internal var fragment: GroupleFragment? = null
         internal var ids: ArrayList<Long> = ArrayList()
@@ -199,23 +314,6 @@ class GroupleFragment : Fragment() {
             if (fragment == null) {
                 cancel(true)
                 return
-            }
-
-            if (!cacheDir.exists())
-                cacheDir.mkdirs()
-
-            if (!imageLoader.isInited) {
-
-                val options = DisplayImageOptions.Builder()
-                        .cacheOnDisk(true)
-                        .bitmapConfig(Bitmap.Config.RGB_565)
-                        .build()
-                val config = ImageLoaderConfiguration.Builder(fragment!!.activity!!)
-                        .defaultDisplayImageOptions(options)
-                        .denyCacheImageMultipleSizesInMemory()
-                        .diskCache(UnlimitedDiskCache(cacheDir))
-                        .build()
-                imageLoader.init(config)
             }
 
             if (!groupleBookmarksBox.isEmpty && !refresh)
@@ -293,7 +391,7 @@ class GroupleFragment : Fragment() {
 
             fragment?.showActivity()
             fragment?.swipeRefresh?.isRefreshing = false
-            fragment?.mGetBookmarksTask = null
+            fragment?.mGetWatchingBookmarksTask = null
 
             if (aBoolean) {
                 val listener = object : OnItemClickListener {
@@ -313,7 +411,6 @@ class GroupleFragment : Fragment() {
                 }else{
                     adapter.update(groupleBookmarksBox)
                 }
-                fragment?.registerForContextMenu(fragment?.mangaCells!!)
             }
         }
 
@@ -322,7 +419,7 @@ class GroupleFragment : Fragment() {
             if (fragment == null)
                 return
 
-            fragment!!.mGetBookmarksTask = null
+            fragment!!.mGetWatchingBookmarksTask = null
 
             fragment!!.showActivity()
         }
