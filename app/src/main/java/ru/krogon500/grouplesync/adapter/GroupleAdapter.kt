@@ -1,7 +1,6 @@
 package ru.krogon500.grouplesync.adapter
 
 import android.view.LayoutInflater
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -15,16 +14,16 @@ import ru.krogon500.grouplesync.holder.MangaCellsViewHolder
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import java.text.Collator
 
-class GroupleAdapter(private var listener: OnItemClickListener?) : RecyclerView.Adapter<MangaCellsViewHolder>() {
+class GroupleAdapter(private var itemClickListener: OnItemClickListener?, private val contextMenu: View.OnCreateContextMenuListener?) : RecyclerView.Adapter<MangaCellsViewHolder>() {
     private var groupleBookmarks = RecyclerArray<GroupleBookmark>(this, GroupleFragment.imageLoader)
     private var groupleBookmarksBox: Box<GroupleBookmark>? = null
     var selectedItem: Int? = null
 
-    constructor(groupleBookmarksBox: Box<GroupleBookmark>, listener: OnItemClickListener?): this(listener){
+    constructor(groupleBookmarksBox: Box<GroupleBookmark>, itemClickListener: OnItemClickListener?, contextMenu: View.OnCreateContextMenuListener?): this(itemClickListener, contextMenu){
         groupleBookmarksBox.init()
     }
 
-    constructor(data: Collection<GroupleBookmark>, listener: OnItemClickListener?): this(listener){
+    constructor(data: Collection<GroupleBookmark>, itemClickListener: OnItemClickListener?, contextMenu: View.OnCreateContextMenuListener?): this(itemClickListener, contextMenu){
         groupleBookmarks.addAll(data, false)
     }
 
@@ -54,10 +53,7 @@ class GroupleAdapter(private var listener: OnItemClickListener?) : RecyclerView.
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MangaCellsViewHolder {
         val itemView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.cellgrid, parent, false)
-        return MangaCellsViewHolder(itemView, listener, View.OnCreateContextMenuListener { menu, _, _ ->
-            menu.add(Menu.NONE, 1, 0, "Убрать в \"Прочитанное\"")
-            menu.add(Menu.NONE, 2, 0, "Перенести в \"Читаемое\"")
-        })
+        return MangaCellsViewHolder(itemView, itemClickListener, contextMenu)
     }
 
     override fun getItemCount(): Int {
@@ -91,7 +87,6 @@ class GroupleAdapter(private var listener: OnItemClickListener?) : RecyclerView.
     fun remove(pos: Int) {
         groupleBookmarksBox?.remove(groupleBookmarks[pos])
         groupleBookmarks.removeAt(pos)
-        notifyItemRemoved(pos)
     }
 
     fun update(groupleBookmarksBox: Box<GroupleBookmark>) {
@@ -107,6 +102,10 @@ class GroupleAdapter(private var listener: OnItemClickListener?) : RecyclerView.
 
     fun getItem(position: Int): GroupleBookmark{
         return groupleBookmarks[position]
+    }
+
+    fun getItemPosById(id: Long): Int{
+        return groupleBookmarks.indexOf(groupleBookmarks.find { it.id == id })
     }
 
     override fun getItemId(i: Int): Long {

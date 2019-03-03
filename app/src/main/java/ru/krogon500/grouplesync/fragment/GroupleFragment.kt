@@ -6,10 +6,7 @@ import android.graphics.Bitmap
 import android.os.AsyncTask
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.view.animation.LinearInterpolator
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -61,6 +58,12 @@ class GroupleFragment : Fragment() {
     private val watchingRequestListener = object : RequestListener{
         override fun onComplete(item: Any?) {
             Toast.makeText(context, "Закладка перенесена в \"Читаемое\"", Toast.LENGTH_SHORT).show()
+            val adapter = mangaCells.adapter as? GroupleAdapter ?: return
+            val id = item as Long
+            val position = adapter.getItemPosById(id)
+            if(position >= 0){
+                adapter.remove(position)
+            }
         }
 
         override fun onFail(e: Exception) {
@@ -263,17 +266,14 @@ class GroupleFragment : Fragment() {
             fragment?.mGetPlanedBookmarksTask = null
 
             if (aBoolean) {
-                val listener = object : OnItemClickListener {
+                val itemClickListener = object : OnItemClickListener{
                     override fun onItemClick(view: View, position: Int) {
                         val adapter = fragment?.mangaCells?.adapter as? GroupleAdapter ?: return
-                        val mangaItem = adapter.getItem(position)
-
-                        val intent = Intent(fragment!!.activity, MangaChapters::class.java)
-                        intent.putExtra("id", mangaItem.id)
-                        fragment?.startActivity(intent)
+                        val bookmark = adapter.getItem(position)
+                        Utils.BookmarkTask(bookmark.id, Utils.GROUPLE_WATCHING_ACTION, fragment?.watchingRequestListener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
                     }
                 }
-                fragment?.mangaCells?.adapter = GroupleAdapter(planedBookmarks, listener)
+                fragment?.mangaCells?.adapter = GroupleAdapter(planedBookmarks, itemClickListener, null)
                 fragment?.gotPlaned = true
             }
         }
@@ -285,12 +285,7 @@ class GroupleFragment : Fragment() {
 
             imageLoader.stop()
             fragment?.mGetPlanedBookmarksTask = null
-            fragment?.swipeRefresh?.isEnabled = true
-            fragment?.swipeRefresh?.isRefreshing = false
-            fragment?.swipeRefresh?.isRefreshing = true
-
-            fragment?.mGetWatchingBookmarksTask = GetWatchingBookmarksTask(false, fragment!!).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
-
+            fragment?.getWatchingBookmarks()
             //fragment?.showActivity()
         }
     }
@@ -300,7 +295,7 @@ class GroupleFragment : Fragment() {
         mangaCells.adapter = null
         swipeRefresh.isEnabled = true
         swipeRefresh.isRefreshing = true
-        mGetWatchingBookmarksTask = GetWatchingBookmarksTask(false, this).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
+        mGetWatchingBookmarksTask = GetWatchingBookmarksTask(true, this).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
     }
 
     private class GetWatchingBookmarksTask(private val refresh: Boolean, context: GroupleFragment) : AsyncTask<Void, Void, Boolean>() {
@@ -407,7 +402,7 @@ class GroupleFragment : Fragment() {
 
                 val adapter = fragment?.mangaCells?.adapter as? GroupleAdapter
                 if(adapter == null){
-                    fragment?.mangaCells?.adapter = GroupleAdapter(groupleBookmarksBox, listener)
+                    fragment?.mangaCells?.adapter = GroupleAdapter(groupleBookmarksBox, listener, View.OnCreateContextMenuListener { menu, _, _ ->  menu.add(Menu.NONE, 1, 0, "Убрать в \"Прочитанное\"")})
                 }else{
                     adapter.update(groupleBookmarksBox)
                 }

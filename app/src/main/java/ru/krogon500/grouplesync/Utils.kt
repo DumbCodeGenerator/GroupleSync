@@ -394,7 +394,7 @@ object Utils {
 
         override fun onPostExecute(success: Boolean) {
             if (success) {
-                listener?.onComplete(null)
+                listener?.onComplete(id)
             }
         }
     }
