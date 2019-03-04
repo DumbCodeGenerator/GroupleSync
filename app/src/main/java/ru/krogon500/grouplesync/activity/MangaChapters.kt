@@ -391,11 +391,11 @@ class MangaChapters : AppCompatActivity() {
                 val chapters = table.children()
                 chapters.reverse()
 
-                chapters.forEach {
+                chapters.forEachIndexed { index, element ->
                     if (isCancelled)
                         return false
 
-                    val hrefna = it.selectFirst("td[colspan] > a[title]")
+                    val hrefna = element.selectFirst("td[colspan] > a[title]")
                     val chapterLink = String.format("%s://%s%s", url.protocol, url.host, hrefna.attr("href"))
 
                     var chapterName = StringBuilder()
@@ -414,7 +414,7 @@ class MangaChapters : AppCompatActivity() {
                     val volAndChap = chapterLink.getVolAndChapter()
 
                     val chapterItem = gChapters.find { chapter -> chapter.link == chapterLink.trim() } ?:
-                                                    GroupleChapter(id = 0, title = title, link = chapterLink, vol = volAndChap[0], chap = volAndChap[1], date = System.nanoTime())
+                                                    GroupleChapter(id = 0, title = title, link = chapterLink, vol = volAndChap[0], chap = volAndChap[1], order = index)
 
                     if(refresh || gChapters.size < chapters.size) {
                         if (chapterLink.trim() != readedLink.trim() && !done && !readedLink.trim().contains("vol0/0", true)) {

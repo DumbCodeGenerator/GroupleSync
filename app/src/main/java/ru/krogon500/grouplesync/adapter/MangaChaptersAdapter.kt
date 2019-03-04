@@ -25,15 +25,16 @@ import se.ajgarn.mpeventbus.MPEventBus
 
 
 class MangaChaptersAdapter(private val mContext: Context,
-                           var gChapters: ToMany<GroupleChapter>,
-                           var gChaptersBox: Box<GroupleChapter>,
+                           private var gChapters: ToMany<GroupleChapter>,
+                           private var gChaptersBox: Box<GroupleChapter>,
                            private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<ChaptersViewHolder>() {
-    val checkedItems = BooleanArray(itemCount)
+    val checkedItems: BooleanArray
     var reversed: Boolean = false
-    lateinit var recyclerView: RecyclerView
+    private lateinit var recyclerView: RecyclerView
 
     init {
-        gChapters.sortByDescending { it.date }
+        gChapters.sortByDescending { it.order }
+        checkedItems = BooleanArray(gChapters.size)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChaptersViewHolder {
@@ -97,7 +98,7 @@ class MangaChaptersAdapter(private val mContext: Context,
         }
 
     fun update(chapterItems: ToMany<GroupleChapter>){
-        this.gChapters = chapterItems.also { it.sortByDescending { chapter -> chapter.date } }
+        this.gChapters = chapterItems.also { it.sortByDescending { chapter -> chapter.order } }
         notifyDataSetChanged()
     }
 

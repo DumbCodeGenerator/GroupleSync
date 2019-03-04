@@ -279,17 +279,17 @@ class HentaiChapters : AppCompatActivity() {
                     relateds.addAll(pageD.select("div.related"))
                 }
 
-                relateds.forEach {
+                relateds.forEachIndexed { index, element ->
                     if (isCancelled)
                         return false
 
-                    val hrefna = it.selectFirst("div.related_info").selectFirst("h2").child(0)
+                    val hrefna = element.selectFirst("div.related_info").selectFirst("h2").child(0)
                     val title = hrefna.text()
 
-                    val imageLink = Utils.hentaiBase + it.selectFirst("div.related_cover").selectFirst("a").selectFirst("img").attr("src")
+                    val imageLink = Utils.hentaiBase + element.selectFirst("div.related_cover").selectFirst("a").selectFirst("img").attr("src")
                     val imageLinkHQ = imageLink.getHQThumbnail()
 
-                    val series = it.selectFirst("div.related_row > div.item2 > h3 > a").text()
+                    val series = element.selectFirst("div.related_row > div.item2 > h3 > a").text()
 
                     val chapterLink = String.format("%s://%s%s", url.protocol, url.host, hrefna.attr("href")).replace("/manga/", "/online/")
 
@@ -301,14 +301,14 @@ class HentaiChapters : AppCompatActivity() {
 
                     val chapterItem: HentaiManga
                     when {
-                        fromBrowser -> chapterItem = HentaiManga(id = id!!, title = title, series = series, coverLink = imageLinkHQ, link = chapterLink, date = System.nanoTime())
+                        fromBrowser -> chapterItem = HentaiManga(id = id!!, title = title, series = series, coverLink = imageLinkHQ, link = chapterLink, order = index)
                         id == originalHentai!!.id -> {
-                            if(originalHentai!!.date == 0L)
-                                originalHentai!!.date = System.nanoTime()
+                            if(originalHentai!!.order < 0)
+                                originalHentai!!.order = index
 
                             chapterItem = originalHentai!!
                         }
-                        else -> chapterItem = hChapters!!.find { chapter -> chapter.id == id } ?: HentaiManga(id = id!!, title = title, link = chapterLink, date = System.nanoTime())
+                        else -> chapterItem = hChapters!!.find { chapter -> chapter.id == id } ?: HentaiManga(id = id!!, title = title, link = chapterLink, order = index)
                     }
 
                     if(!fromBrowser) {

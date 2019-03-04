@@ -8,7 +8,7 @@ import io.objectbox.relation.ToOne
 @Entity data class GroupleChapter(@Id var id: Long = 0,
                                   var title: String,
                                   var link: String,
-                                  var date: Long,
+                                  var order: Int,
                                   var vol: Int,
                                   var chap: Int ,
                                   var page: Int = 0,

@@ -41,7 +41,7 @@
     },
     {
       "id": "2:1676386843907145064",
-      "lastPropertyId": "13:9086432975379150",
+      "lastPropertyId": "14:2345888095662209050",
       "name": "GroupleChapter",
       "properties": [
         {
@@ -90,12 +90,12 @@
           "name": "bookmarkId"
         },
         {
-          "id": "12:356823184856961531",
-          "name": "date"
-        },
-        {
           "id": "13:9086432975379150",
           "name": "files"
+        },
+        {
+          "id": "14:2345888095662209050",
+          "name": "order"
         }
       ],
       "relations": []
@@ -178,7 +178,9 @@
   "modelVersionParserMinimum": 4,
   "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredPropertyUids": [
+    356823184856961531
+  ],
   "retiredRelationUids": [
     5581014570555592375
   ],

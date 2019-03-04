@@ -55,10 +55,10 @@ class SyncService : Service() {
         nm.notify(id, mBuilder.build())
         gBookmarksBox = (application as App).boxStore.boxFor()
         gBookmarks = gBookmarksBox.all
-        //var dbHelper = DbHelper(applicationContext, DbHelper.CHAPTERS_DATABASE_NAME)
         mSettings = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        //val tables = dbHelper.writableDatabase.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null)
+
         max = gBookmarks.size
+
         mBuilder.setProgress(max, current, false)
         nm.notify(id, mBuilder.build())
         Log.i("lol", "count: $max")
@@ -69,7 +69,7 @@ class SyncService : Service() {
 
             val chapters = it.chapters
             if(chapters.isEmpty()) return@forEach
-            chapters.sortByDescending { chapter -> chapter.date }
+            chapters.sortByDescending { chapter -> chapter.order }
             val readed_chap: GroupleChapter
             try {
                 readed_chap = chapters.first { chapter -> chapter.readed }

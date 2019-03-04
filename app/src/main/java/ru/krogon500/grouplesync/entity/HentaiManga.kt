@@ -17,7 +17,7 @@ import ru.krogon500.grouplesync.interfaces.ICoverSettable
 @Entity class HentaiManga(@Id(assignable = true) var id: Long = 0,
                           var title: String,
                           var link: String,
-                          var date: Long = 0,
+                          var order: Int = -1,
                           var coverLink: String = "",
                           var series: String = "",
                           var page: Int = 0,

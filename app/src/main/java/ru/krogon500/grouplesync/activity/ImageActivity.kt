@@ -147,7 +147,7 @@ class ImageActivity : AppCompatActivity() {
             gBookmarksBox = (application as App).boxStore.boxFor()
             gChaptersBox = (application as App).boxStore.boxFor()
             gBookmark = gBookmarksBox.get(args.getLong("bookmark_id")) ?: return
-            gChapters = gBookmark.chapters.also { it.sortBy { chapter -> chapter.date } }
+            gChapters = gBookmark.chapters.also { it.sortBy { chapter -> chapter.order } }
 
             val currentGChapter = gChapters.getById(id) ?: return
 
@@ -177,7 +177,7 @@ class ImageActivity : AppCompatActivity() {
             hentaiBox = (application as App).boxStore.boxFor()
             val currentHManga = hentaiBox.get(id) ?: return
             page = currentHManga.page
-            hChapters = currentHManga.origin.target?.relateds.also { it?.sortBy { chapter -> chapter.date } }
+            hChapters = currentHManga.origin.target?.relateds.also { it?.sortBy { chapter -> chapter.order } }
 
             if(hChapters != null && hChapters!!.isNotEmpty()) {
                 val prevChapIndex = hChapters!!.indexOfId(id) - 1
