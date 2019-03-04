@@ -20,6 +20,7 @@ class GroupleAdapter(private var itemClickListener: OnItemClickListener?, privat
     var selectedItem: Int? = null
 
     constructor(groupleBookmarksBox: Box<GroupleBookmark>, itemClickListener: OnItemClickListener?, contextMenu: View.OnCreateContextMenuListener?): this(itemClickListener, contextMenu){
+        this.groupleBookmarksBox = groupleBookmarksBox
         groupleBookmarksBox.init()
     }
 

@@ -161,7 +161,7 @@ class GroupleFragment : Fragment() {
                 adapter.remove(position)
 
                 Utils.BookmarkTask(id, Utils.GROUPLE_COMPLETE_ACTION, completeRequestListener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
-                val mangaDir = File(Utils.grouplePath + File.separator + "b" + id)
+                val mangaDir = File("${Utils.grouplePath}/b$id")
                 if (mangaDir.exists())
                     mangaDir.deleteRecursively()
                 return true

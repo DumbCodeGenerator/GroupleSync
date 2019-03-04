@@ -431,6 +431,7 @@ class ImageActivity : AppCompatActivity() {
         } else if(type == Utils.HENTAI && hChapters != null && !fromBrowser){
             val currentHManga = if(prevChapter) {
                 if(this.count > ImageAdapter.currentRange) setPrevId()
+                if(prevId == 0L) return
                 hentaiBox[prevId] ?: return
             } else {
                 val readedHManga = hentaiBox[id] ?: return
@@ -438,7 +439,7 @@ class ImageActivity : AppCompatActivity() {
                 readedHManga.page = page
                 hentaiBox.put(readedHManga)
 
-                setNextId()
+                if(!setNextId()) return
                 hentaiBox[id] ?: return
             }
 
@@ -447,7 +448,7 @@ class ImageActivity : AppCompatActivity() {
             }else{
                 if(prevChapter) this.prevChapterOnline(currentHManga.link, currentHManga.id) else this.nextChapterOnline(currentHManga.link, currentHManga.id)
             }
-        } else if(type == Utils.HENTAI && fromBrowser && chaptersLinks != null){
+        } else if(type == Utils.HENTAI && fromBrowser && chaptersLinks != null && !prevChapter){
             val nextIndex = chaptersLinks!!.indexOf(link) + 1
             if(nextIndex < chaptersLinks!!.size) {
                 link = chaptersLinks!![nextIndex]
