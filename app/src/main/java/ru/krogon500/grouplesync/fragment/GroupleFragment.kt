@@ -238,9 +238,7 @@ class GroupleFragment : Fragment() {
 
                     val baseLink = it.selectFirst("a.site-element").attr("href")
 
-                    val isNew = it.select("span.manga-updated").size == 1
-
-                    val mangaItem = GroupleBookmark(id, title, baseLink, imageLink, "", 0, isNew)
+                    val mangaItem = GroupleBookmark(id, title, baseLink, imageLink, "", 0)
                     planedBookmarks.add(mangaItem)
                 }
                 return !isCancelled
@@ -333,7 +331,7 @@ class GroupleFragment : Fragment() {
 
                     val screenshot = it.select("td[width=850] > a.screenshot").first()
 
-                    val title = screenshot.attr("title")
+                    var title = screenshot.attr("title")
 
                     val id = it.attr("id").replace("b", "").toLongOrNull() ?: 0
 
@@ -350,6 +348,8 @@ class GroupleFragment : Fragment() {
 
 
                     val isNew = it.select("span.manga-updated").size == 1
+                    val isCompleted = it.select("span.mangaTranslationCompleted").size == 1
+                    if(isCompleted) title = "*".plus(title)
 
                     ids.add(id)
 
@@ -357,6 +357,7 @@ class GroupleFragment : Fragment() {
                     if(mangaItem == null)
                         mangaItem = GroupleBookmark(id, title, baseLink, imageLink, readedLink, page, isNew)
                     else{
+                        mangaItem.title = title
                         mangaItem.isNew = isNew
                         mangaItem.readedLink = readedLink
                         mangaItem.page = page
@@ -404,7 +405,10 @@ class GroupleFragment : Fragment() {
                 if(adapter == null){
                     fragment?.mangaCells?.adapter = GroupleAdapter(groupleBookmarksBox, listener, View.OnCreateContextMenuListener { menu, _, _ ->  menu.add(Menu.NONE, 1, 0, "Убрать в \"Прочитанное\"")})
                 }else{
-                    adapter.update(groupleBookmarksBox)
+                    if(adapter.itemCount.toLong() != groupleBookmarksBox.count())
+                        adapter.update(groupleBookmarksBox)
+                    else
+                        adapter.forceUpdate(groupleBookmarksBox)
                 }
             }
         }

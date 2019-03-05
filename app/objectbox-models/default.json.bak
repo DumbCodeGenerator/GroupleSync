@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:2615379334712289728",
-      "lastPropertyId": "7:5255411567844732356",
+      "lastPropertyId": "8:800995994112994402",
       "name": "GroupleBookmark",
       "properties": [
         {
@@ -35,13 +35,17 @@
         {
           "id": "7:5255411567844732356",
           "name": "isNew"
+        },
+        {
+          "id": "8:800995994112994402",
+          "name": "isCompleted"
         }
       ],
       "relations": []
     },
     {
       "id": "2:1676386843907145064",
-      "lastPropertyId": "13:9086432975379150",
+      "lastPropertyId": "14:2345888095662209050",
       "name": "GroupleChapter",
       "properties": [
         {
@@ -90,19 +94,19 @@
           "name": "bookmarkId"
         },
         {
-          "id": "12:356823184856961531",
-          "name": "date"
-        },
-        {
           "id": "13:9086432975379150",
           "name": "files"
+        },
+        {
+          "id": "14:2345888095662209050",
+          "name": "order"
         }
       ],
       "relations": []
     },
     {
       "id": "3:4397267029518351786",
-      "lastPropertyId": "15:5725845972965175593",
+      "lastPropertyId": "16:1313905275674661179",
       "name": "HentaiManga",
       "properties": [
         {
@@ -155,16 +159,16 @@
           "name": "originId"
         },
         {
-          "id": "13:2703859450223836879",
-          "name": "date"
-        },
-        {
           "id": "14:2443885158759211977",
           "name": "series"
         },
         {
           "id": "15:5725845972965175593",
           "name": "files"
+        },
+        {
+          "id": "16:1313905275674661179",
+          "name": "order"
         }
       ],
       "relations": []
@@ -178,7 +182,10 @@
   "modelVersionParserMinimum": 4,
   "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredPropertyUids": [
+    356823184856961531,
+    2703859450223836879
+  ],
   "retiredRelationUids": [
     5581014570555592375
   ],

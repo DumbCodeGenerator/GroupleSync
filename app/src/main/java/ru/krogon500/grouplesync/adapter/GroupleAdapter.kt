@@ -32,7 +32,7 @@ class GroupleAdapter(private var itemClickListener: OnItemClickListener?, privat
         val newBookmarks = this.query { sort { o1, o2 ->
             val ruCollator = Collator.getInstance(java.util.Locale("ru", "RU"))
             ruCollator.strength = Collator.PRIMARY
-            ruCollator.compare(o1.title, o2.title) } }.find()
+            ruCollator.compare(o1.title.removePrefix("*"), o2.title.removePrefix("*")) } }.find()
         if(groupleBookmarks.isEmpty()) {
             groupleBookmarks.addAll(newBookmarks, false)
         }else{
@@ -96,9 +96,15 @@ class GroupleAdapter(private var itemClickListener: OnItemClickListener?, privat
         //notifyDataSetChanged()
     }
 
+    fun forceUpdate(groupleBookmarksBox: Box<GroupleBookmark>){
+        this.groupleBookmarksBox = groupleBookmarksBox
+        groupleBookmarks.clear()
+        groupleBookmarksBox.init()
+    }
+
     fun update(data: Collection<GroupleBookmark>){
         groupleBookmarks.swap(data)
-        notifyDataSetChanged()
+        //notifyDataSetChanged()
     }
 
     fun getItem(position: Int): GroupleBookmark{
