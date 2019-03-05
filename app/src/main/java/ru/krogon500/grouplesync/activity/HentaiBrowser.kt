@@ -62,8 +62,7 @@ class HentaiBrowser : AppCompatActivity() {
             val key = adapter.getItem(position)
             if (seriesLinks.containsKey(key)) {
                 curPage = 0
-                hTask = HentaiBrowse(mUser, mPass, seriesLinks[key]!!, firstPage = true)
-                hTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+                hTask = HentaiBrowse(mUser, mPass, seriesLinks[key]!!, firstPage = true).also{ it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
                 browseList.adapter = null
                 browser_fab.hideView()
             }
@@ -177,15 +176,13 @@ class HentaiBrowser : AppCompatActivity() {
                     isLoading = true
 
                     visPos = firstVisibleItem
-                    hTask = HentaiBrowse(mUser, mPass, pages[curPage], false)
-                    hTask!!.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR)
+                    hTask = HentaiBrowse(mUser, mPass, pages[curPage], false).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
                     curPage++
                 }
             }
         })
 
-        hTask = HentaiBrowse(mUser, mPass, Utils.hentaiBase + "/manga/", true)
-        hTask?.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) ?: return
+        hTask = HentaiBrowse(mUser, mPass, Utils.hentaiBase + "/manga/", true).also { it.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR) }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
