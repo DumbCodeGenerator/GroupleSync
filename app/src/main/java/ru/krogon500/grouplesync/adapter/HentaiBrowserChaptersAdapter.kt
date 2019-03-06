@@ -17,9 +17,9 @@ import ru.krogon500.grouplesync.holder.ClickableViewHolder
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 
 
-class HentaiBrowserChaptersAdapter(data: MutableList<HentaiManga>, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<HentaiBrowserChaptersAdapter.ViewHolder>() {
+class HentaiBrowserChaptersAdapter(data: Collection<HentaiManga>, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<HentaiBrowserChaptersAdapter.ViewHolder>() {
     var hChapters = RecyclerArray<HentaiManga>(this, HentaiBrowser.imageLoader)
-    val space = 30
+    private val space = 30
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val itemView = LayoutInflater.from(parent.context)
@@ -53,12 +53,10 @@ class HentaiBrowserChaptersAdapter(data: MutableList<HentaiManga>, private var l
 
     init {
         hChapters.addAll(data, false)
-        //hChapters.forEachIndexed { index, hentaiManga ->  hentaiManga.setCover(HentaiBrowser.imageLoader, this@HentaiBrowserChaptersAdapter, position = index) }
     }
 
-    fun update(data: MutableList<HentaiManga>){
-        hChapters = data as RecyclerArray<HentaiManga>
-        notifyDataSetChanged()
+    fun update(data: Collection<HentaiManga>){
+        hChapters.swap(data)
     }
 
     override fun getItemCount(): Int {

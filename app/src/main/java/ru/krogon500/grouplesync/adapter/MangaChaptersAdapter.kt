@@ -22,6 +22,7 @@ import ru.krogon500.grouplesync.holder.ChaptersViewHolder
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.service.DownloadService
 import se.ajgarn.mpeventbus.MPEventBus
+import java.util.*
 
 
 class MangaChaptersAdapter(private val mContext: Context,
@@ -99,6 +100,7 @@ class MangaChaptersAdapter(private val mContext: Context,
 
     fun update(chapterItems: ToMany<GroupleChapter>){
         this.gChapters = chapterItems.also { it.sortByDescending { chapter -> chapter.order } }
+        checkedItems.copyOf(gChapters.size)
         notifyDataSetChanged()
     }
 

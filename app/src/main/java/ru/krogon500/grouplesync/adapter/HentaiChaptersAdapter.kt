@@ -102,6 +102,7 @@ class HentaiChaptersAdapter(private val mContext: Context, private val origin_ma
     fun update(hChapters: ToMany<HentaiManga>){
         this.hChapters = hChapters
         this.hChapters.sortBy{it.order}
+        checkedItems.copyOf(hChapters.size)
         notifyDataSetChanged()
     }
 

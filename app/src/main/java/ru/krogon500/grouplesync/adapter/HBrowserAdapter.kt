@@ -14,10 +14,10 @@ import ru.krogon500.grouplesync.holder.ClickableViewHolder
 import ru.krogon500.grouplesync.interfaces.OnItemClickListener
 import ru.krogon500.grouplesync.items.MangaItem
 
-class HBrowserAdapter(data: MutableList<MangaItem>, var addFooter: Boolean = false, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class HBrowserAdapter(data: Collection<MangaItem>, var addFooter: Boolean = false, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var mangaItems: RecyclerArray<MangaItem> = RecyclerArray(this, HentaiBrowser.imageLoader)
-    val FOOTER_VIEW = 1
-    val space = 30
+    private val FOOTER_VIEW = 1
+    private val space = 30
     var selectedItem: Int? = null
 
     init {
@@ -47,7 +47,7 @@ class HBrowserAdapter(data: MutableList<MangaItem>, var addFooter: Boolean = fal
         }
     }
 
-    fun update(data: MutableList<MangaItem>, append: Boolean) {
+    fun update(data: Collection<MangaItem>, append: Boolean) {
         if(!addFooter) notifyItemRemoved(mangaItems.size)
         if (append) mangaItems.addAll(data, true) else mangaItems.swap(data)
     }
