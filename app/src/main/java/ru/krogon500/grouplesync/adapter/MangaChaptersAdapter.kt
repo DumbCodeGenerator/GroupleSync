@@ -29,7 +29,7 @@ class MangaChaptersAdapter(private val mContext: Context,
                            private var gChapters: ToMany<GroupleChapter>,
                            private var gChaptersBox: Box<GroupleChapter>,
                            private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<ChaptersViewHolder>() {
-    val checkedItems: BooleanArray
+    var checkedItems: BooleanArray
     var reversed: Boolean = false
     private lateinit var recyclerView: RecyclerView
 
@@ -99,8 +99,16 @@ class MangaChaptersAdapter(private val mContext: Context,
         }
 
     fun update(chapterItems: ToMany<GroupleChapter>){
+        val prevSize = gChapters.size
         this.gChapters = chapterItems.also { it.sortByDescending { chapter -> chapter.order } }
-        checkedItems.copyOf(gChapters.size)
+        val offset = gChapters.size - prevSize
+        val tempArray = checkedItems
+        checkedItems = BooleanArray(gChapters.size)
+        if(offset > 0) {
+            System.arraycopy(tempArray, 0, checkedItems, offset, tempArray.size)
+        }else{
+            System.arraycopy(tempArray, Math.abs(offset), checkedItems, 0, tempArray.size - Math.abs(offset))
+        }
         notifyDataSetChanged()
     }
 

@@ -28,7 +28,7 @@ import se.ajgarn.mpeventbus.MPEventBus
 
 class HentaiChaptersAdapter(private val mContext: Context, private val origin_manga: HentaiManga, private var listener: OnItemClickListener? = null) : RecyclerView.Adapter<ChaptersViewHolder>() {
     private var hChapters: ToMany<HentaiManga> = origin_manga.relateds.also { it.sortBy { chapter -> chapter.order } }
-    val checkedItems: BooleanArray
+    var checkedItems: BooleanArray
     private lateinit var recyclerView: RecyclerView
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChaptersViewHolder {
@@ -100,9 +100,8 @@ class HentaiChaptersAdapter(private val mContext: Context, private val origin_ma
     }
 
     fun update(hChapters: ToMany<HentaiManga>){
-        this.hChapters = hChapters
-        this.hChapters.sortBy{it.order}
-        checkedItems.copyOf(hChapters.size)
+        this.hChapters = hChapters.also { it.sortBy { chapter -> chapter.order } }
+        checkedItems = checkedItems.copyOf(hChapters.size)
         notifyDataSetChanged()
     }
 

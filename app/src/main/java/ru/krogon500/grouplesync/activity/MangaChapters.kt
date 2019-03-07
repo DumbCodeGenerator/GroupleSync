@@ -413,7 +413,7 @@ class MangaChapters : AppCompatActivity() {
                     val title = "Глава $chapterName$sup"
                     val volAndChap = chapterLink.getVolAndChapter()
 
-                    val chapterItem = gChapters.find { chapter -> chapter.link == chapterLink.trim() } ?:
+                    val chapterItem = gChapters.find { chapter -> chapter.link == chapterLink.trim() }?.also { it.order = index } ?:
                                                     GroupleChapter(id = 0, title = title, link = chapterLink, vol = volAndChap[0], chap = volAndChap[1], order = index)
 
                     if(refresh || gChapters.size < chapters.size) {

@@ -308,7 +308,7 @@ class HentaiChapters : AppCompatActivity() {
 
                             chapterItem = originalHentai!!
                         }
-                        else -> chapterItem = hChapters!!.find { chapter -> chapter.id == id } ?: HentaiManga(id = id!!, title = title, link = chapterLink, order = index)
+                        else -> chapterItem = hChapters!!.find { chapter -> chapter.id == id }?.also { it.order = index } ?: HentaiManga(id = id!!, title = title, link = chapterLink, order = index)
                     }
 
                     if(!fromBrowser) {
